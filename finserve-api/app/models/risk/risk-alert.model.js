@@ -1,8 +1,8 @@
 module.exports = (sequelize, Sequelize) => {
-  const RiskAssessment = sequelize.define(
-    'risk_assessments',
+  const RiskAlert = sequelize.define(
+    'risk_alerts',
     {
-      assessment_id: {
+      alert_id: {
         type: Sequelize.UUID,
         defaultValue: Sequelize.UUIDV4,
         allowNull: false,
@@ -12,48 +12,38 @@ module.exports = (sequelize, Sequelize) => {
         type: Sequelize.UUID,
         allowNull: false,
       },
-      order_id: {
-        type: Sequelize.UUID,
+      alert_type: {
+        type: Sequelize.ENUM('VAR_EXCEEDED', 'VOLATILITY_SPIKE', 'DRAWDOWN_LIMIT', 'SHARPE_RATIO_LOW'),
+        allowNull: false,
       },
-      risk_score: {
+      threshold_value: {
         type: Sequelize.DECIMAL(9, 4),
         allowNull: false,
-        defaultValue: 0,
       },
-      volatility: {
+      current_value: {
         type: Sequelize.DECIMAL(9, 4),
         allowNull: false,
-        defaultValue: 0,
       },
-      max_drawdown: {
-        type: Sequelize.DECIMAL(9, 4),
-        allowNull: false,
-        defaultValue: 0,
-      },
-      sharpe_ratio: {
-        type: Sequelize.DECIMAL(9, 4),
-        allowNull: false,
-        defaultValue: 0,
-      },
-      value_at_risk: {
-        type: Sequelize.DECIMAL(9, 4),
-        allowNull: false,
-        defaultValue: 0,
-      },
-      recommendations: {
+      message: {
         type: Sequelize.TEXT,
+        allowNull: false,
       },
-      assessment_date: {
+      is_read: {
+        type: Sequelize.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      alert_date: {
         type: Sequelize.DATE,
         defaultValue: Sequelize.NOW,
       },
     },
     {
-      tableName: 'risk_assessments',
+      tableName: 'risk_alerts',
       underscored: true,
       timestamps: true,
     }
   );
 
-  return RiskAssessment;
+  return RiskAlert;
 };

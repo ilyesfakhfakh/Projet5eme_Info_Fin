@@ -21,6 +21,7 @@ const rolesRoutes = require('./app/routes/roles.routes');
 const adminRoutes = require('./app/routes/admin.routes');
 const statsRoutes = require('./app/routes/stats.routes');
 const userStatsRoutes = require('./app/routes/user-stats.routes');
+const riskRoutes = require('./app/routes/risk.routes');
 
 // Configuration de la sécurité
 app.use(helmet({ 
@@ -96,6 +97,7 @@ app.use('/api/v1/roles', rolesRoutes)
 app.use('/api/v1/admin', adminRoutes)
 app.use('/api/v1/stats', statsRoutes)
 app.use('/api/v1', userStatsRoutes)
+app.use('/api/v1/risk', riskRoutes)
 
 // Nouvelles routes utilisateur avec gestion de sécurité
 const userRoutes = require('./app/routes/user.routes');

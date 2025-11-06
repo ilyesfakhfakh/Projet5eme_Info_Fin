@@ -1,8 +1,8 @@
 module.exports = (sequelize, Sequelize) => {
-  const RiskAssessment = sequelize.define(
-    'risk_assessments',
+  const ScenarioAnalysis = sequelize.define(
+    'scenario_analyses',
     {
-      assessment_id: {
+      scenario_id: {
         type: Sequelize.UUID,
         defaultValue: Sequelize.UUIDV4,
         allowNull: false,
@@ -12,48 +12,43 @@ module.exports = (sequelize, Sequelize) => {
         type: Sequelize.UUID,
         allowNull: false,
       },
-      order_id: {
-        type: Sequelize.UUID,
+      scenario_type: {
+        type: Sequelize.ENUM('STRESS_TEST', 'WHAT_IF', 'BACKTESTING'),
+        allowNull: false,
       },
-      risk_score: {
+      scenario_name: {
+        type: Sequelize.STRING(255),
+        allowNull: false,
+      },
+      parameters: {
+        type: Sequelize.JSON,
+        allowNull: false,
+      },
+      results: {
+        type: Sequelize.JSON,
+        allowNull: false,
+      },
+      impact_var: {
         type: Sequelize.DECIMAL(9, 4),
         allowNull: false,
         defaultValue: 0,
       },
-      volatility: {
+      impact_drawdown: {
         type: Sequelize.DECIMAL(9, 4),
         allowNull: false,
         defaultValue: 0,
       },
-      max_drawdown: {
-        type: Sequelize.DECIMAL(9, 4),
-        allowNull: false,
-        defaultValue: 0,
-      },
-      sharpe_ratio: {
-        type: Sequelize.DECIMAL(9, 4),
-        allowNull: false,
-        defaultValue: 0,
-      },
-      value_at_risk: {
-        type: Sequelize.DECIMAL(9, 4),
-        allowNull: false,
-        defaultValue: 0,
-      },
-      recommendations: {
-        type: Sequelize.TEXT,
-      },
-      assessment_date: {
+      created_date: {
         type: Sequelize.DATE,
         defaultValue: Sequelize.NOW,
       },
     },
     {
-      tableName: 'risk_assessments',
+      tableName: 'scenario_analyses',
       underscored: true,
       timestamps: true,
     }
   );
 
-  return RiskAssessment;
+  return ScenarioAnalysis;
 };

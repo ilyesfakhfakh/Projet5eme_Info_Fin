@@ -50,6 +50,8 @@ db.trading_strategies = require('./trading/trading-strategy.model')(sequelize, S
 db.risk_assessments = require('./risk/risk-assessment.model')(sequelize, Sequelize)
 db.risk_limits = require('./risk/risk-limit.model')(sequelize, Sequelize)
 db.stop_losses = require('./risk/stop-loss.model')(sequelize, Sequelize)
+db.risk_alerts = require('./risk/risk-alert.model')(sequelize, Sequelize)
+db.scenario_analyses = require('./risk/scenario-analysis.model')(sequelize, Sequelize)
 db.technical_indicators = require('./indicators/technical-indicator.model')(sequelize, Sequelize)
 db.indicator_values = require('./indicators/indicator-value.model')(sequelize, Sequelize)
 db.charts = require('./indicators/chart.model')(sequelize, Sequelize)
@@ -310,6 +312,26 @@ db.portfolios.hasMany(db.risk_limits, {
   onUpdate: 'CASCADE',
 })
 db.risk_limits.belongsTo(db.portfolios, {
+  foreignKey: { name: 'portfolio_id', allowNull: false },
+})
+
+db.portfolios.hasMany(db.risk_alerts, {
+  foreignKey: { name: 'portfolio_id', allowNull: false },
+  as: 'risk_alerts',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE',
+})
+db.risk_alerts.belongsTo(db.portfolios, {
+  foreignKey: { name: 'portfolio_id', allowNull: false },
+})
+
+db.portfolios.hasMany(db.scenario_analyses, {
+  foreignKey: { name: 'portfolio_id', allowNull: false },
+  as: 'scenario_analyses',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE',
+})
+db.scenario_analyses.belongsTo(db.portfolios, {
   foreignKey: { name: 'portfolio_id', allowNull: false },
 })
 
