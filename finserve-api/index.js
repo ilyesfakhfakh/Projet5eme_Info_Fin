@@ -22,6 +22,11 @@ const adminRoutes = require('./app/routes/admin.routes');
 const statsRoutes = require('./app/routes/stats.routes');
 const userStatsRoutes = require('./app/routes/user-stats.routes');
 
+// New trading and market routes
+const orderBookRoutes = require('./app/routes/orderBookRoutes');
+const priceRoutes = require('./app/routes/price.routes');
+const simulationRoutes = require('./app/routes/simulation.routes');
+
 // Configuration de la sécurité
 app.use(helmet({ 
   crossOriginEmbedderPolicy: false, 
@@ -100,6 +105,11 @@ app.use('/api/v1', userStatsRoutes)
 // Nouvelles routes utilisateur avec gestion de sécurité
 const userRoutes = require('./app/routes/user.routes');
 app.use('/api/v1/user', userRoutes);
+
+// Trading and market routes
+app.use('/api/v1/trading', orderBookRoutes)
+app.use('/api/v1/market', priceRoutes)
+app.use('/api/v1/simulation', simulationRoutes)
 
 // 404 handler
 app.use((req, res, next) => {
