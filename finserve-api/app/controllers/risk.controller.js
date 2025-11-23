@@ -106,6 +106,68 @@ class RiskController {
   }
 
   /**
+   * Get current risk metrics for a portfolio
+   */
+  static async getRiskMetrics(req, res) {
+    try {
+      const { portfolio_id } = req.params;
+
+      // Get latest assessment
+      const latestAssessment = await RiskAssessment.findOne({
+        where: { portfolio_id },
+        order: [['assessment_date', 'DESC']]
+      });
+
+      if (!latestAssessment) {
+        return res.status(404).json({ error: 'No risk assessment found for this portfolio' });
+      }
+
+      // Get recent alerts
+      const recentAlerts = await RiskAlert.findAll({
+        where: { portfolio_id },
+        order: [['alert_date', 'DESC']],
+        limit: 5
+      });
+
+      // Get active limits
+      const activeLimits = await RiskLimit.findAll({
+        where: { portfolio_id, is_active: true }
+      });
+
+      const metrics = {
+        portfolio_id,
+        current_assessment: {
+          risk_score: latestAssessment.risk_score,
+          volatility: latestAssessment.volatility,
+          max_drawdown: latestAssessment.max_drawdown,
+          sharpe_ratio: latestAssessment.sharpe_ratio,
+          value_at_risk: latestAssessment.value_at_risk,
+          recommendations: latestAssessment.recommendations,
+          assessment_date: latestAssessment.assessment_date
+        },
+        alerts_summary: {
+          total: recentAlerts.length,
+          unread: recentAlerts.filter(a => !a.is_read).length,
+          critical: recentAlerts.filter(a => a.severity === 'CRITICAL').length
+        },
+        limits_summary: {
+          total: activeLimits.length,
+          breached: activeLimits.filter(l => l.alert_triggered).length,
+          compliance_rate: activeLimits.length > 0 ?
+            (activeLimits.filter(l => !l.alert_triggered).length / activeLimits.length) * 100 : 100
+        },
+        last_updated: latestAssessment.assessment_date
+      };
+
+      res.json(metrics);
+
+    } catch (error) {
+      console.error('Error fetching risk metrics:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
+  /**
    * Update or create risk limits
    */
   static async updateRiskLimits(req, res) {

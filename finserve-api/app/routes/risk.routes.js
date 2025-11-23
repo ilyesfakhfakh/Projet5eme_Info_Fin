@@ -35,6 +35,9 @@ router.post('/portfolios/:portfolio_id/monitoring/toggle', RiskLimitsController.
 router.get('/monitoring/status', RiskLimitsController.getMonitoringStatus);
 router.post('/portfolios/:portfolio_id/monitoring/check', RiskLimitsController.triggerRiskCheck);
 
+// Risk Metrics Routes
+router.get('/metrics/:portfolio_id', RiskController.getRiskMetrics);
+
 // Visualization Routes
 router.get('/portfolios/:portfolio_id/charts/var', RiskVisualizationController.getVaRChart);
 router.get('/portfolios/:portfolio_id/charts/drawdown', RiskVisualizationController.getDrawdownChart);
