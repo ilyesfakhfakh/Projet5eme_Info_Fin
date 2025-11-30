@@ -1,0 +1,711 @@
+import { useState, useEffect } from 'react';
+import {
+  Grid,
+  Card,
+  CardContent,
+  Typography,
+  Box,
+  Tabs,
+  Tab,
+  Button,
+  TextField,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Chip,
+  IconButton,
+  Alert,
+  CircularProgress,
+  Paper
+} from '@mui/material';
+import {
+  Add,
+  Delete,
+  Edit,
+  PlayArrow,
+  Stop,
+  TrendingUp,
+  ShowChart,
+  Timeline
+} from '@mui/icons-material';
+
+// API imports
+import {
+  createOrder,
+  getOrders,
+  cancelOrder,
+  getOpenOrders,
+  getOrderHistory
+} from '../../api/orders';
+import {
+  createStrategy,
+  getStrategies,
+  backtestStrategy,
+  runStrategy,
+  deleteStrategy
+} from '../../api/strategies';
+import {
+  createTechnicalIndicator,
+  getTechnicalIndicators,
+  calculateTechnicalIndicator,
+  getTechnicalIndicatorValues
+} from '../../api/technicalIndicators';
+import { getCurrentPrice, getOHLCV } from '../../api/price';
+import { getOrderBook, getBestBid, getBestAsk } from '../../api/orderBook';
+import MainCard from '../../ui-component/cards/MainCard';
+
+// ===========================|| TRADING HUB ||=========================== //
+
+function TabPanel({ children, value, index }) {
+  return (
+    <div role="tabpanel" hidden={value !== index}>
+      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+    </div>
+  );
+}
+
+const TradingHub = () => {
+  const [tabValue, setTabValue] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+
+  // Orders state
+  const [orders, setOrders] = useState([]);
+  const [orderDialog, setOrderDialog] = useState(false);
+  const [newOrder, setNewOrder] = useState({
+    asset_id: 'BTC',
+    order_type: 'LIMIT',
+    side: 'BUY',
+    quantity: '',
+    price: ''
+  });
+
+  // Strategies state
+  const [strategies, setStrategies] = useState([]);
+  const [strategyDialog, setStrategyDialog] = useState(false);
+  const [newStrategy, setNewStrategy] = useState({
+    strategy_name: '',
+    description: '',
+    parameters: {}
+  });
+
+  // Indicators state
+  const [indicators, setIndicators] = useState([]);
+  const [indicatorDialog, setIndicatorDialog] = useState(false);
+  const [newIndicator, setNewIndicator] = useState({
+    asset_id: 'BTC',
+    indicator_type: 'RSI',
+    period: 14
+  });
+  const [indicatorValues, setIndicatorValues] = useState([]);
+
+  // Order book state
+  const [orderBook, setOrderBook] = useState({ buyOrders: [], sellOrders: [] });
+  const [bestBid, setBestBid] = useState(null);
+  const [bestAsk, setBestAsk] = useState(null);
+
+  useEffect(() => {
+    loadInitialData();
+  }, [tabValue]);
+
+  const loadInitialData = async () => {
+    setLoading(true);
+    try {
+      if (tabValue === 0) {
+        await loadOrders();
+        await loadOrderBook();
+      } else if (tabValue === 1) {
+        await loadStrategies();
+      } else if (tabValue === 2) {
+        await loadIndicators();
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ===== ORDER MANAGEMENT =====
+  const loadOrders = async () => {
+    try {
+      const data = await getOrders({ status: 'OPEN' });
+      setOrders(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Error loading orders:', err);
+      setOrders([]);
+    }
+  };
+
+  const loadOrderBook = async () => {
+    try {
+      const [book, bid, ask] = await Promise.all([
+        getOrderBook(null, 'BTC'),
+        getBestBid('BTC'),
+        getBestAsk('BTC')
+      ]);
+      setOrderBook(book);
+      setBestBid(bid);
+      setBestAsk(ask);
+    } catch (err) {
+      console.error('Error loading order book:', err);
+    }
+  };
+
+  const handleCreateOrder = async () => {
+    try {
+      setLoading(true);
+      await createOrder({
+        ...newOrder,
+        portfolio_id: 'default-portfolio-id',
+        quantity: parseFloat(newOrder.quantity),
+        price: parseFloat(newOrder.price)
+      });
+      setSuccess('Order created successfully!');
+      setOrderDialog(false);
+      setNewOrder({ asset_id: 'BTC', order_type: 'LIMIT', side: 'BUY', quantity: '', price: '' });
+      await loadOrders();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancelOrder = async (orderId) => {
+    try {
+      await cancelOrder(orderId);
+      setSuccess('Order cancelled successfully!');
+      await loadOrders();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  // ===== STRATEGY MANAGEMENT =====
+  const loadStrategies = async () => {
+    try {
+      const data = await getStrategies();
+      setStrategies(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Error loading strategies:', err);
+      setStrategies([]);
+    }
+  };
+
+  const handleCreateStrategy = async () => {
+    try {
+      setLoading(true);
+      await createStrategy({
+        ...newStrategy,
+        user_id: 'current-user-id',
+        parameters: JSON.stringify(newStrategy.parameters)
+      });
+      setSuccess('Strategy created successfully!');
+      setStrategyDialog(false);
+      setNewStrategy({ strategy_name: '', description: '', parameters: {} });
+      await loadStrategies();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRunStrategy = async (strategyId) => {
+    try {
+      await runStrategy(strategyId);
+      setSuccess('Strategy executed successfully!');
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handleDeleteStrategy = async (strategyId) => {
+    try {
+      await deleteStrategy(strategyId);
+      setSuccess('Strategy deleted successfully!');
+      await loadStrategies();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  // ===== INDICATOR MANAGEMENT =====
+  const loadIndicators = async () => {
+    try {
+      const data = await getTechnicalIndicators();
+      setIndicators(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Error loading indicators:', err);
+      setIndicators([]);
+    }
+  };
+
+  const handleCreateIndicator = async () => {
+    try {
+      setLoading(true);
+      const indicator = await createTechnicalIndicator({
+        ...newIndicator,
+        parameters: { period: newIndicator.period }
+      });
+      await calculateTechnicalIndicator(indicator.indicator_id);
+      setSuccess('Indicator created and calculated!');
+      setIndicatorDialog(false);
+      setNewIndicator({ asset_id: 'BTC', indicator_type: 'RSI', period: 14 });
+      await loadIndicators();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleViewIndicatorValues = async (indicatorId) => {
+    try {
+      const values = await getTechnicalIndicatorValues(indicatorId, 10);
+      setIndicatorValues(values);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handleTabChange = (event, newValue) => {
+    setTabValue(newValue);
+    setError(null);
+    setSuccess(null);
+  };
+
+  return (
+    <Grid container spacing={3}>
+      {/* Header */}
+      <Grid item xs={12}>
+        <Typography variant="h2" gutterBottom>
+          Trading Hub
+        </Typography>
+        {error && <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 2 }}>{error}</Alert>}
+        {success && <Alert severity="success" onClose={() => setSuccess(null)} sx={{ mb: 2 }}>{success}</Alert>}
+      </Grid>
+
+      {/* Main Content */}
+      <Grid item xs={12}>
+        <MainCard>
+          <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+            <Tabs value={tabValue} onChange={handleTabChange}>
+              <Tab label="Orders & Order Book" icon={<ShowChart />} iconPosition="start" />
+              <Tab label="Trading Strategies" icon={<Timeline />} iconPosition="start" />
+              <Tab label="Technical Indicators" icon={<TrendingUp />} iconPosition="start" />
+            </Tabs>
+          </Box>
+
+          {/* ORDERS TAB */}
+          <TabPanel value={tabValue} index={0}>
+            <Grid container spacing={3}>
+              <Grid item xs={12}>
+                <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                  <Typography variant="h3">Order Management</Typography>
+                  <Button
+                    variant="contained"
+                    startIcon={<Add />}
+                    onClick={() => setOrderDialog(true)}
+                  >
+                    New Order
+                  </Button>
+                </Box>
+              </Grid>
+
+              {/* Order Book */}
+              <Grid item xs={12} md={6}>
+                <Card>
+                  <CardContent>
+                    <Typography variant="h4" gutterBottom>Order Book - BTC</Typography>
+                    <Box mb={2}>
+                      <Typography variant="body2" color="success.main">
+                        Best Bid: ${bestBid?.price || 'N/A'}
+                      </Typography>
+                      <Typography variant="body2" color="error.main">
+                        Best Ask: ${bestAsk?.price || 'N/A'}
+                      </Typography>
+                    </Box>
+                    <Grid container spacing={2}>
+                      <Grid item xs={6}>
+                        <Typography variant="subtitle2" color="success.main">Bids</Typography>
+                        {orderBook.buyOrders?.slice(0, 5).map((order, i) => (
+                          <Box key={i} display="flex" justifyContent="space-between">
+                            <Typography variant="body2">${order.price}</Typography>
+                            <Typography variant="body2">{order.quantity}</Typography>
+                          </Box>
+                        ))}
+                      </Grid>
+                      <Grid item xs={6}>
+                        <Typography variant="subtitle2" color="error.main">Asks</Typography>
+                        {orderBook.sellOrders?.slice(0, 5).map((order, i) => (
+                          <Box key={i} display="flex" justifyContent="space-between">
+                            <Typography variant="body2">${order.price}</Typography>
+                            <Typography variant="body2">{order.quantity}</Typography>
+                          </Box>
+                        ))}
+                      </Grid>
+                    </Grid>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* Open Orders */}
+              <Grid item xs={12}>
+                <Typography variant="h4" gutterBottom>Open Orders</Typography>
+                <TableContainer component={Paper}>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Asset</TableCell>
+                        <TableCell>Type</TableCell>
+                        <TableCell>Side</TableCell>
+                        <TableCell align="right">Quantity</TableCell>
+                        <TableCell align="right">Price</TableCell>
+                        <TableCell>Status</TableCell>
+                        <TableCell>Actions</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {orders.map((order) => (
+                        <TableRow key={order.order_id}>
+                          <TableCell>{order.asset_id}</TableCell>
+                          <TableCell>{order.order_type}</TableCell>
+                          <TableCell>
+                            <Chip
+                              label={order.side}
+                              color={order.side === 'BUY' ? 'success' : 'error'}
+                              size="small"
+                            />
+                          </TableCell>
+                          <TableCell align="right">{order.quantity}</TableCell>
+                          <TableCell align="right">${order.price}</TableCell>
+                          <TableCell><Chip label={order.status} size="small" /></TableCell>
+                          <TableCell>
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={() => handleCancelOrder(order.order_id)}
+                            >
+                              <Delete />
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {orders.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={7} align="center">
+                            No open orders
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Grid>
+            </Grid>
+          </TabPanel>
+
+          {/* STRATEGIES TAB */}
+          <TabPanel value={tabValue} index={1}>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+              <Typography variant="h3">Trading Strategies</Typography>
+              <Button
+                variant="contained"
+                startIcon={<Add />}
+                onClick={() => setStrategyDialog(true)}
+              >
+                New Strategy
+              </Button>
+            </Box>
+
+            <TableContainer component={Paper}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Name</TableCell>
+                    <TableCell>Description</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Performance</TableCell>
+                    <TableCell>Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {strategies.map((strategy) => (
+                    <TableRow key={strategy.strategy_id}>
+                      <TableCell>{strategy.strategy_name}</TableCell>
+                      <TableCell>{strategy.description}</TableCell>
+                      <TableCell>
+                        <Chip
+                          label={strategy.is_active ? 'Active' : 'Inactive'}
+                          color={strategy.is_active ? 'success' : 'default'}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell>{strategy.performance || 'N/A'}</TableCell>
+                      <TableCell>
+                        <IconButton
+                          size="small"
+                          color="primary"
+                          onClick={() => handleRunStrategy(strategy.strategy_id)}
+                        >
+                          <PlayArrow />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          color="error"
+                          onClick={() => handleDeleteStrategy(strategy.strategy_id)}
+                        >
+                          <Delete />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {strategies.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5} align="center">
+                        No strategies created
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </TabPanel>
+
+          {/* INDICATORS TAB */}
+          <TabPanel value={tabValue} index={2}>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+              <Typography variant="h3">Technical Indicators</Typography>
+              <Button
+                variant="contained"
+                startIcon={<Add />}
+                onClick={() => setIndicatorDialog(true)}
+              >
+                New Indicator
+              </Button>
+            </Box>
+
+            <TableContainer component={Paper}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Asset</TableCell>
+                    <TableCell>Type</TableCell>
+                    <TableCell>Period</TableCell>
+                    <TableCell>Last Calculated</TableCell>
+                    <TableCell>Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {indicators.map((indicator) => (
+                    <TableRow key={indicator.indicator_id}>
+                      <TableCell>{indicator.asset_id}</TableCell>
+                      <TableCell>{indicator.indicator_type}</TableCell>
+                      <TableCell>{indicator.period}</TableCell>
+                      <TableCell>
+                        {indicator.last_calculation_date 
+                          ? new Date(indicator.last_calculation_date).toLocaleString()
+                          : 'Never'
+                        }
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          size="small"
+                          onClick={() => handleViewIndicatorValues(indicator.indicator_id)}
+                        >
+                          View Values
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {indicators.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5} align="center">
+                        No indicators created
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </TabPanel>
+        </MainCard>
+      </Grid>
+
+      {/* Order Dialog */}
+      <Dialog open={orderDialog} onClose={() => setOrderDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Create New Order</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid item xs={12}>
+              <FormControl fullWidth>
+                <InputLabel>Asset</InputLabel>
+                <Select
+                  value={newOrder.asset_id}
+                  label="Asset"
+                  onChange={(e) => setNewOrder({ ...newOrder, asset_id: e.target.value })}
+                >
+                  <MenuItem value="BTC">BTC</MenuItem>
+                  <MenuItem value="ETH">ETH</MenuItem>
+                  <MenuItem value="USDT">USDT</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={6}>
+              <FormControl fullWidth>
+                <InputLabel>Type</InputLabel>
+                <Select
+                  value={newOrder.order_type}
+                  label="Type"
+                  onChange={(e) => setNewOrder({ ...newOrder, order_type: e.target.value })}
+                >
+                  <MenuItem value="MARKET">Market</MenuItem>
+                  <MenuItem value="LIMIT">Limit</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={6}>
+              <FormControl fullWidth>
+                <InputLabel>Side</InputLabel>
+                <Select
+                  value={newOrder.side}
+                  label="Side"
+                  onChange={(e) => setNewOrder({ ...newOrder, side: e.target.value })}
+                >
+                  <MenuItem value="BUY">Buy</MenuItem>
+                  <MenuItem value="SELL">Sell</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Quantity"
+                type="number"
+                value={newOrder.quantity}
+                onChange={(e) => setNewOrder({ ...newOrder, quantity: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Price"
+                type="number"
+                value={newOrder.price}
+                onChange={(e) => setNewOrder({ ...newOrder, price: e.target.value })}
+                disabled={newOrder.order_type === 'MARKET'}
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOrderDialog(false)}>Cancel</Button>
+          <Button onClick={handleCreateOrder} variant="contained" disabled={loading}>
+            {loading ? <CircularProgress size={24} /> : 'Create Order'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Strategy Dialog */}
+      <Dialog open={strategyDialog} onClose={() => setStrategyDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Create New Strategy</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Strategy Name"
+                value={newStrategy.strategy_name}
+                onChange={(e) => setNewStrategy({ ...newStrategy, strategy_name: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Description"
+                multiline
+                rows={3}
+                value={newStrategy.description}
+                onChange={(e) => setNewStrategy({ ...newStrategy, description: e.target.value })}
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setStrategyDialog(false)}>Cancel</Button>
+          <Button onClick={handleCreateStrategy} variant="contained" disabled={loading}>
+            {loading ? <CircularProgress size={24} /> : 'Create Strategy'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Indicator Dialog */}
+      <Dialog open={indicatorDialog} onClose={() => setIndicatorDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Create New Indicator</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid item xs={12}>
+              <FormControl fullWidth>
+                <InputLabel>Asset</InputLabel>
+                <Select
+                  value={newIndicator.asset_id}
+                  label="Asset"
+                  onChange={(e) => setNewIndicator({ ...newIndicator, asset_id: e.target.value })}
+                >
+                  <MenuItem value="BTC">BTC</MenuItem>
+                  <MenuItem value="ETH">ETH</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12}>
+              <FormControl fullWidth>
+                <InputLabel>Indicator Type</InputLabel>
+                <Select
+                  value={newIndicator.indicator_type}
+                  label="Indicator Type"
+                  onChange={(e) => setNewIndicator({ ...newIndicator, indicator_type: e.target.value })}
+                >
+                  <MenuItem value="RSI">RSI</MenuItem>
+                  <MenuItem value="MACD">MACD</MenuItem>
+                  <MenuItem value="SMA">SMA</MenuItem>
+                  <MenuItem value="EMA">EMA</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Period"
+                type="number"
+                value={newIndicator.period}
+                onChange={(e) => setNewIndicator({ ...newIndicator, period: parseInt(e.target.value) })}
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setIndicatorDialog(false)}>Cancel</Button>
+          <Button onClick={handleCreateIndicator} variant="contained" disabled={loading}>
+            {loading ? <CircularProgress size={24} /> : 'Create Indicator'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Grid>
+  );
+};
+
+export default TradingHub;
