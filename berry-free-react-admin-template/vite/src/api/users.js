@@ -204,3 +204,21 @@ export const exportUsers = async (params = {}) => {
   });
   return response;
 };
+
+// Default export for compatibility with api/index.js
+export default {
+  listUsers,
+  getUser,
+  createUser,
+  updateUser,
+  deleteUser,
+  setUserRoles,
+  getUserStats,
+  unlockUser,
+  resetPassword,
+  getUserSecurityInfo,
+  updateUserSecurity,
+  toggleTwoFactorAuth,
+  getUserAuditLogs,
+  exportUsers
+};

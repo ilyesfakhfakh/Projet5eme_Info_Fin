@@ -14,15 +14,18 @@ const dotenv = require("dotenv");
 const path = require("path");
 dotenv.config({ path: path.join(__dirname, ".env") });
 
-// Routes
-const authRoutes = require('./app/routes/auth.routes');
-const usersRoutes = require('./app/routes/users.routes');
-const rolesRoutes = require('./app/routes/roles.routes');
-const adminRoutes = require('./app/routes/admin.routes');
-const statsRoutes = require('./app/routes/stats.routes');
-const userStatsRoutes = require('./app/routes/user-stats.routes');
+// Configuration CORS (DOIT ÊTRE AVANT HELMET!)
+const corsOptions = {
+  origin: ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173', 'http://localhost:3200'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Content-Length', 'X-Requested-With'],
+  exposedHeaders: ['Content-Disposition'],
+  credentials: true,
+  optionsSuccessStatus: 200
+}
+app.use(cors(corsOptions));
 
-// Configuration de la sécurité
+// Configuration de la sécurité (APRÈS CORS)
 app.use(helmet({ 
   crossOriginEmbedderPolicy: false, 
   originAgentCluster: true 
@@ -61,17 +64,6 @@ app.use(bodyParser.urlencoded({
 }))
 app.use(morgan('combined'))
 
-// Configuration CORS
-const corsOptions = {
-  origin: ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173', 'http://localhost:3200'],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Content-Length', 'X-Requested-With'],
-  exposedHeaders: ['Content-Disposition'],
-  credentials: true,
-  optionsSuccessStatus: 200 // Pour les navigateurs qui ont des problèmes avec le statut 204
-}
-app.use(cors(corsOptions));
-
 const db = require('./app/models')
 
 db.sequelize.sync(
@@ -88,6 +80,24 @@ app.get("/", (req, res) => {
     version: "1.0.0",
   });
 })
+
+// Routes imports
+const authRoutes = require('./app/routes/auth.routes');
+const usersRoutes = require('./app/routes/users.routes');
+const rolesRoutes = require('./app/routes/roles.routes');
+const adminRoutes = require('./app/routes/admin.routes');
+const statsRoutes = require('./app/routes/stats.routes');
+const userStatsRoutes = require('./app/routes/user-stats.routes');
+
+// Market routes
+require('./app/routes/market/asset.routes')(app);
+require('./app/routes/market/market-data.routes')(app);
+require('./app/routes/market/realtime-quote.routes')(app);
+require('./app/routes/market/historical-data.routes')(app);
+require('./app/routes/market/price-alert.routes')(app);
+require('./app/routes/news/economic-event.routes')(app);
+require('./app/routes/news/market-news.routes')(app);
+require('./app/routes/news/news-article.routes')(app);
 
 // API routes
 app.use('/api/v1/auth', authRoutes)

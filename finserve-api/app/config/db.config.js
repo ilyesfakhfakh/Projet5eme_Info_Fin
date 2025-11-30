@@ -1,7 +1,7 @@
 module.exports = {
-  HOST: process.env.HOST,
-  USER: process.env.USER,
-  PASSWORD: process.env.PASSWORD,
+  HOST: process.env.HOST || 'localhost',
+  USER: process.env.DB_USER || process.env.USER || 'root',
+  PASSWORD: process.env.DB_PASSWORD || process.env.PASSWORD || '',
   DB: process.env.DB || 'finserve',
   dialect: "mysql",
   pool: {

@@ -205,3 +205,15 @@ export async function verifyTwoFactorCode({ userId, code }) {
     throw error;
   }
 }
+
+// Default export for compatibility with api/index.js
+export default {
+  login,
+  register,
+  me,
+  logout,
+  verifyEmail,
+  resendVerificationCode,
+  checkTwoFactorRequirement,
+  verifyTwoFactorCode
+};

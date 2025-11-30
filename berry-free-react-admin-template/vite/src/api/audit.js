@@ -7,3 +7,8 @@ export async function listAuditLogs({ q = '', page = 1, pageSize = 10 } = {}) {
   params.set('pageSize', String(pageSize));
   return http.get(`/admin/audit-logs?${params.toString()}`);
 }
+
+// Default export for compatibility with api/index.js
+export default {
+  listAuditLogs
+};

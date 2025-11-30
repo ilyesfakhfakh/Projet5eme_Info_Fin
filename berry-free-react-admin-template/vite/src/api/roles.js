@@ -15,3 +15,11 @@ export function updateRole(id, { permissions }) {
 export function deleteRole(id) {
   return http.del(`/roles/${id}`);
 }
+
+// Default export for compatibility with api/index.js
+export default {
+  listRoles,
+  getRole,
+  updateRole,
+  deleteRole
+};

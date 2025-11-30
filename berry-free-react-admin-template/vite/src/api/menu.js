@@ -39,3 +39,9 @@ export function handlerDrawerOpen(isDashboardDrawerOpened) {
     false
   );
 }
+
+// Default export for compatibility with api/index.js
+export default {
+  useGetMenuMaster,
+  handlerDrawerOpen
+};

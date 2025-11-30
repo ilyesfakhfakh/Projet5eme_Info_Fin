@@ -44,6 +44,8 @@ db.transactions = require('./portfolio/transaction.model')(sequelize, Sequelize)
 db.assets = require('./market/asset.model')(sequelize, Sequelize)
 db.market_data = require('./market/market-data.model')(sequelize, Sequelize)
 db.real_time_quotes = require('./market/realtime-quote.model')(sequelize, Sequelize)
+db.historical_data = require('./market/historical-data.model')(sequelize, Sequelize)
+db.price_alerts = require('./market/price-alert.model')(sequelize, Sequelize)
 db.orders = require('./trading/order.model')(sequelize, Sequelize)
 db.order_executions = require('./trading/order-execution.model')(sequelize, Sequelize)
 db.trading_strategies = require('./trading/trading-strategy.model')(sequelize, Sequelize)
@@ -240,6 +242,36 @@ db.assets.hasMany(db.real_time_quotes, {
   onUpdate: 'CASCADE',
 })
 db.real_time_quotes.belongsTo(db.assets, {
+  foreignKey: { name: 'asset_id', allowNull: false },
+})
+
+db.assets.hasMany(db.historical_data, {
+  foreignKey: { name: 'asset_id', allowNull: false },
+  as: 'historical_data',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE',
+})
+db.historical_data.belongsTo(db.assets, {
+  foreignKey: { name: 'asset_id', allowNull: false },
+})
+
+db.users.hasMany(db.price_alerts, {
+  foreignKey: { name: 'user_id', allowNull: false },
+  as: 'price_alerts',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE',
+})
+db.price_alerts.belongsTo(db.users, {
+  foreignKey: { name: 'user_id', allowNull: false },
+})
+
+db.assets.hasMany(db.price_alerts, {
+  foreignKey: { name: 'asset_id', allowNull: false },
+  as: 'price_alerts',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE',
+})
+db.price_alerts.belongsTo(db.assets, {
   foreignKey: { name: 'asset_id', allowNull: false },
 })
 
