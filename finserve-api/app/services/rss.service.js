@@ -46,6 +46,32 @@ const RSS_SOURCES = {
     category: 'stocks',
     priority: 2
   },
+  yahoofinance: {
+    name: 'Yahoo Finance',
+    url: 'https://finance.yahoo.com/news/rssindex',
+    category: 'stocks',
+    priority: 1
+  },
+  
+  // Trading Specific
+  tradingview: {
+    name: 'TradingView',
+    url: 'https://www.tradingview.com/feed/',
+    category: 'trading',
+    priority: 1
+  },
+  investorplace: {
+    name: 'InvestorPlace',
+    url: 'https://investorplace.com/feed/',
+    category: 'trading',
+    priority: 2
+  },
+  benzinga: {
+    name: 'Benzinga',
+    url: 'https://www.benzinga.com/feed',
+    category: 'trading',
+    priority: 1
+  },
   
   // Forex
   forexlive: {

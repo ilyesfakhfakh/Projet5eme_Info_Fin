@@ -239,6 +239,38 @@ router.get('/news/category/:category', getNewsByCategory)
 router.get('/news/trending', getTrendingNews)
 router.get('/news/search/:keyword', searchNews)
 router.get('/news/symbol/:symbol', getNewsBySymbol)
+
+// Specialized section endpoints
+router.get('/news/sections/trading', async (req, res) => {
+  const limit = parseInt(req.query.limit) || 20
+  try {
+    const news = await rssService.getNewsByCategory('trading', limit)
+    res.json({ success: true, data: news, count: news.length })
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message })
+  }
+})
+
+router.get('/news/sections/stocks', async (req, res) => {
+  const limit = parseInt(req.query.limit) || 20
+  try {
+    const news = await rssService.getNewsByCategory('stocks', limit)
+    res.json({ success: true, data: news, count: news.length })
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message })
+  }
+})
+
+router.get('/news/sections/currencies', async (req, res) => {
+  const limit = parseInt(req.query.limit) || 20
+  try {
+    const news = await rssService.getNewsByCategory('forex', limit)
+    res.json({ success: true, data: news, count: news.length })
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message })
+  }
+})
+
 router.get('/sources', getAvailableSources)
 router.post('/refresh', refreshFeeds)
 router.get('/stats', getFeedStats)

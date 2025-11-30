@@ -13,7 +13,9 @@ import {
   IconButton,
   Avatar,
   Stack,
-  Tooltip
+  Tooltip,
+  Tabs,
+  Tab
 } from '@mui/material';
 import { 
   Newspaper,
@@ -21,7 +23,10 @@ import {
   OpenInNew,
   Refresh,
   TrendingUp,
-  FiberManualRecord
+  FiberManualRecord,
+  ShowChart,
+  CandlestickChart,
+  AttachMoney
 } from '@mui/icons-material';
 
 // API imports
@@ -31,13 +36,28 @@ import MainCard from '../../ui-component/cards/MainCard';
 // ===========================|| COMPREHENSIVE DASHBOARD ||=========================== //
 
 const ComprehensiveDashboard = () => {
+  // Tab state
+  const [activeTab, setActiveTab] = useState(0);
+  
   // Financial News state
   const [news, setNews] = useState([]);
   const [newsLoading, setNewsLoading] = useState(false);
+  
+  // Section specific news
+  const [tradingNews, setTradingNews] = useState([]);
+  const [stocksNews, setStocksNews] = useState([]);
+  const [currenciesNews, setCurrenciesNews] = useState([]);
 
   useEffect(() => {
     loadTrendingNews();
   }, []);
+  
+  useEffect(() => {
+    // Load section-specific news when tab changes
+    if (activeTab === 1) loadTradingNews();
+    else if (activeTab === 2) loadStocksNews();
+    else if (activeTab === 3) loadCurrenciesNews();
+  }, [activeTab]);
 
   const loadTrendingNews = async () => {
     try {
@@ -46,6 +66,45 @@ const ComprehensiveDashboard = () => {
       setNews(data.data || []);
     } catch (err) {
       console.error('Error loading news:', err);
+    } finally {
+      setNewsLoading(false);
+    }
+  };
+
+  const loadTradingNews = async () => {
+    if (tradingNews.length > 0) return; // Already loaded
+    try {
+      setNewsLoading(true);
+      const data = await http.get('/rss/news/sections/trading?limit=15');
+      setTradingNews(data.data || []);
+    } catch (err) {
+      console.error('Error loading trading news:', err);
+    } finally {
+      setNewsLoading(false);
+    }
+  };
+
+  const loadStocksNews = async () => {
+    if (stocksNews.length > 0) return; // Already loaded
+    try {
+      setNewsLoading(true);
+      const data = await http.get('/rss/news/sections/stocks?limit=15');
+      setStocksNews(data.data || []);
+    } catch (err) {
+      console.error('Error loading stocks news:', err);
+    } finally {
+      setNewsLoading(false);
+    }
+  };
+
+  const loadCurrenciesNews = async () => {
+    if (currenciesNews.length > 0) return; // Already loaded
+    try {
+      setNewsLoading(true);
+      const data = await http.get('/rss/news/sections/currencies?limit=15');
+      setCurrenciesNews(data.data || []);
+    } catch (err) {
+      console.error('Error loading currencies news:', err);
     } finally {
       setNewsLoading(false);
     }
@@ -93,6 +152,40 @@ const ComprehensiveDashboard = () => {
     return <FiberManualRecord sx={{ fontSize: 10 }} />;
   };
 
+  // Get current news based on active tab
+  const getCurrentNews = () => {
+    switch(activeTab) {
+      case 0: return news;
+      case 1: return tradingNews;
+      case 2: return stocksNews;
+      case 3: return currenciesNews;
+      default: return news;
+    }
+  };
+
+  const handleRefresh = () => {
+    switch(activeTab) {
+      case 0: 
+        setNews([]);
+        loadTrendingNews();
+        break;
+      case 1:
+        setTradingNews([]);
+        loadTradingNews();
+        break;
+      case 2:
+        setStocksNews([]);
+        loadStocksNews();
+        break;
+      case 3:
+        setCurrenciesNews([]);
+        loadCurrenciesNews();
+        break;
+    }
+  };
+
+  const currentNews = getCurrentNews();
+
   return (
     <MainCard 
       title={
@@ -116,17 +209,52 @@ const ComprehensiveDashboard = () => {
               Financial News
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              Trending Stories 🔥
+              Multi-Section Dashboard 🔥
             </Typography>
           </Box>
         </Stack>
       }
     >
+      {/* Tabs Navigation */}
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+        <Tabs 
+          value={activeTab} 
+          onChange={(e, newValue) => setActiveTab(newValue)}
+          variant="scrollable"
+          scrollButtons="auto"
+        >
+          <Tab 
+            icon={<TrendingUp />} 
+            iconPosition="start" 
+            label="Trending" 
+            sx={{ fontWeight: 600 }}
+          />
+          <Tab 
+            icon={<CandlestickChart />} 
+            iconPosition="start" 
+            label="Trading" 
+            sx={{ fontWeight: 600 }}
+          />
+          <Tab 
+            icon={<ShowChart />} 
+            iconPosition="start" 
+            label="Stocks" 
+            sx={{ fontWeight: 600 }}
+          />
+          <Tab 
+            icon={<AttachMoney />} 
+            iconPosition="start" 
+            label="Currencies" 
+            sx={{ fontWeight: 600 }}
+          />
+        </Tabs>
+      </Box>
+
       <Box display="flex" justifyContent="flex-end" mb={3}>
         <Chip 
           icon={<Refresh sx={{ animation: newsLoading ? 'spin 1s linear infinite' : 'none' }} />}
           label={newsLoading ? "Loading..." : "Refresh"} 
-          onClick={loadTrendingNews}
+          onClick={handleRefresh}
           disabled={newsLoading}
           sx={{
             background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
@@ -150,7 +278,7 @@ const ComprehensiveDashboard = () => {
         </Box>
       ) : (
         <Grid container spacing={3}>
-          {news.map((item, index) => (
+          {currentNews.map((item, index) => (
             <Zoom in={true} style={{ transitionDelay: `${index * 50}ms` }} key={item.id}>
               <Grid item xs={12} sm={6} md={4}>
                 <Card 
@@ -331,7 +459,7 @@ const ComprehensiveDashboard = () => {
               </Grid>
             </Zoom>
           ))}
-          {news.length === 0 && (
+          {currentNews.length === 0 && (
             <Grid item xs={12}>
               <Alert severity="info" icon={<Newspaper />}>
                 Aucune actualité disponible pour le moment
