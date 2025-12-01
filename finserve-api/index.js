@@ -10,6 +10,8 @@ const morgan = require("morgan");
 
 const app = express();
 
+console.log('Starting server...');
+
 const dotenv = require("dotenv");
 const path = require("path");
 dotenv.config({ path: path.join(__dirname, ".env") });
@@ -66,12 +68,13 @@ app.use(morgan('combined'))
 
 const db = require('./app/models')
 
+console.log('Starting database sync...')
 db.sequelize.sync(
-  { alter: true }
+  { alter: false, force: false }
 ).then(() => {
-  console.log('Database resync done successfully')
+  console.log('Database sync done successfully')
 }).catch(err => {
-  console.log('Unable de resync database : ', err)
+  console.log('Unable to sync database : ', err)
 })
 
 app.get("/", (req, res) => {
@@ -87,7 +90,7 @@ const usersRoutes = require('./app/routes/users.routes');
 const rolesRoutes = require('./app/routes/roles.routes');
 const adminRoutes = require('./app/routes/admin.routes');
 const statsRoutes = require('./app/routes/stats.routes');
-const userStatsRoutes = require('./app/routes/user-stats.routes');
+const riskRoutes = require('./app/routes/risk.routes');
 
 // Market routes
 require('./app/routes/market/asset.routes')(app);
@@ -99,13 +102,31 @@ require('./app/routes/news/economic-event.routes')(app);
 require('./app/routes/news/market-news.routes')(app);
 require('./app/routes/news/news-article.routes')(app);
 
+// ALM routes (using same pattern as portfolio)
+require('./app/routes/alm/alm.routes')(app);
+
+// Portfolio routes
+require('./app/routes/portfolio.routes')(app);
+
+// TEST ROUTE: If you see this, server is running updated code
+app.get('/api/v1/test-fixed', (req, res) => {
+  res.json({
+    message: "✅ SERVER IS RUNNING UPDATED CODE!",
+    timestamp: new Date().toISOString(),
+    status: "fixed"
+  });
+});
+
+// User stats routes (function style)
+require('./app/routes/user-stats.routes')(app);
+
 // API routes
 app.use('/api/v1/auth', authRoutes)
 app.use('/api/v1/users', usersRoutes)
 app.use('/api/v1/roles', rolesRoutes)
 app.use('/api/v1/admin', adminRoutes)
 app.use('/api/v1/stats', statsRoutes)
-app.use('/api/v1', userStatsRoutes)
+app.use('/api/v1/risk', riskRoutes)
 
 // Nouvelles routes utilisateur avec gestion de sécurité
 const userRoutes = require('./app/routes/user.routes');

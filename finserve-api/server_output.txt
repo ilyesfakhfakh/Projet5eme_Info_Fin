@@ -1,0 +1,39 @@
+
+> finserve-api@1.0.0 start
+> node index.js
+
+Starting server...
+Starting database sync...
+Dossier d'upload trouvé: c:\Users\hp\Desktop\stockmarket\Projet5eme_Info_Fin\finserve-api\uploads
+ALM routes loaded
+Portfolio routes loaded
+ALM routes mounted at /api/v1/alm
+Simulateur de Marché API (HTTP) en cours d'exécution sur le port 3200
+Simulateur de Marché API (HTTPS) en cours d'exécution sur le port 3443
+Connection has been established successfully
+✅ Serveur SMTP est prêt à envoyer des messages
+Database resync done successfully
+::1 - - [30/Nov/2025:18:14:30 +0000] "GET /api/v1/users?page=1&pageSize=100 HTTP/1.1" 403 23 "http://localhost:3000/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0"
+::1 - - [30/Nov/2025:18:14:30 +0000] "GET /api/v1/users?page=1&pageSize=1 HTTP/1.1" 403 23 "http://localhost:3000/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0"
+::1 - - [30/Nov/2025:18:14:30 +0000] "GET /api/v1/users?page=1&pageSize=200 HTTP/1.1" 403 23 "http://localhost:3000/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0"
+::1 - - [30/Nov/2025:18:14:30 +0000] "GET /api/v1/roles HTTP/1.1" 403 23 "http://localhost:3000/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0"
+Finding all portfolios with query: [Object: null prototype] {
+  user_id: 'dc25e004-bd97-4d59-a422-bd78851dace8'
+}
+::1 - - [30/Nov/2025:18:14:34 +0000] "GET /api/v1/alm/yield-curves? HTTP/1.1" 500 28 "http://localhost:3000/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0"
+Found portfolios: 2
+::1 - - [30/Nov/2025:18:14:34 +0000] "GET /api/v1/portfolios?user_id=dc25e004-bd97-4d59-a422-bd78851dace8 HTTP/1.1" 304 - "http://localhost:3000/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0"
+::1 - - [30/Nov/2025:18:14:37 +0000] "GET /api/assets HTTP/1.1" 304 - "http://localhost:3000/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0"
+::1 - - [30/Nov/2025:18:14:37 +0000] "GET /api/market-data HTTP/1.1" 304 - "http://localhost:3000/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0"
+::1 - - [30/Nov/2025:18:14:37 +0000] "GET /api/assets HTTP/1.1" 304 - "http://localhost:3000/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0"
+Finding all portfolios with query: [Object: null prototype] {
+  user_id: 'dc25e004-bd97-4d59-a422-bd78851dace8'
+}
+Found portfolios: 2
+::1 - - [30/Nov/2025:18:14:41 +0000] "GET /api/v1/portfolios?user_id=dc25e004-bd97-4d59-a422-bd78851dace8 HTTP/1.1" 304 - "http://localhost:3000/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0"
+Finding all portfolios with query: [Object: null prototype] {
+  user_id: 'dc25e004-bd97-4d59-a422-bd78851dace8'
+}
+::1 - - [30/Nov/2025:18:15:01 +0000] "GET /api/v1/alm/yield-curves? HTTP/1.1" 500 28 "http://localhost:3000/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0"
+Found portfolios: 2
+::1 - - [30/Nov/2025:18:15:01 +0000] "GET /api/v1/portfolios?user_id=dc25e004-bd97-4d59-a422-bd78851dace8 HTTP/1.1" 304 - "http://localhost:3000/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0"

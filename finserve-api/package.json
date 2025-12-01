@@ -13,7 +13,12 @@
     "seed:auth": "node scripts/seed-auth.js",
     "seed:market": "node scripts/seed-market-data.js",
     "seed:news": "node scripts/seed-news-data.js",
+    "seed:portfolio": "node scripts/seed-portfolio-data.js",
+    "seed:risk": "node scripts/seed-risk-data.js",
     "seed:all": "node scripts/seed-all-data.js",
+    "migrate:with-risk": "node migrate-database-with-risk.js",
+    "test:risk": "node test-risk-apis.js",
+    "fix:risk-schema": "node fix-risk-schema.js",
     "test:api": "node scripts/test-api-connection.js",
     "start": "node index.js"
   },
@@ -46,6 +51,7 @@
     "sequelize": "^6.37.7",
     "sequelize-cli": "^6.6.3",
     "speakeasy": "^2.0.0",
+    "sqlite3": "^5.1.7",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "xlsx": "^0.18.5"

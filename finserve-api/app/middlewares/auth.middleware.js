@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const { User } = require('../models');
+const db = require('../models');
 
 // Middleware pour vérifier le token JWT
 exports.authenticateJWT = async (req, res, next) => {
@@ -12,9 +12,9 @@ exports.authenticateJWT = async (req, res, next) => {
     try {
       // Vérifier et décoder le token
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret');
-      
+
       // Récupérer l'utilisateur depuis la base de données
-      const user = await User.findByPk(decoded.id, {
+      const user = await db.users.findByPk(decoded.sub, {
         attributes: { exclude: ['password'] } // Exclure le mot de passe
       });
       

@@ -58,6 +58,11 @@ module.exports = (sequelize, Sequelize) => {
       last_update_date: {
         type: Sequelize.DATE,
       },
+      is_archived: {
+        type: Sequelize.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
     },
     {
       tableName: 'positions',

@@ -4,7 +4,7 @@ import Typography from '@mui/material/Typography';
 export default function TradingPage() {
   return (
     <MainCard title="Trading">
-      <Typography variant="body1">Placeholder for Trading module. Integrate trading strategies/orders here.</Typography>
+      <Typography variant="body1">Trading module for managing orders, executions, and trading strategies. Connect order endpoints and trading interfaces here.</Typography>
     </MainCard>
   );
 }

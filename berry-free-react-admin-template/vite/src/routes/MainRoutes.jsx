@@ -18,6 +18,7 @@ const NewsPage = Loadable(lazy(() => import('views/modules/News/Index')));
 const RiskPage = Loadable(lazy(() => import('views/modules/Risk/Index')));
 const SimulationPage = Loadable(lazy(() => import('views/modules/Simulation/Index')));
 const TradingPage = Loadable(lazy(() => import('views/modules/Trading/Index')));
+const AlmPage = Loadable(lazy(() => import('views/modules/ALM/Index')));
 const AIPage = Loadable(lazy(() => import('views/modules/AI/Index')));
 const LearningPage = Loadable(lazy(() => import('views/modules/Learning/Index')));
 const IndicatorsPage = Loadable(lazy(() => import('views/modules/Indicators/Index')));
@@ -71,6 +72,7 @@ const MainRoutes = {
         { path: 'risk', element: <RiskPage /> },
         { path: 'simulation', element: <SimulationPage /> },
         { path: 'trading', element: <TradingPage /> },
+        { path: 'alm', element: <AlmPage /> },
         { path: 'ai', element: <AIPage /> },
         { path: 'learning', element: <LearningPage /> },
         { path: 'indicators', element: <IndicatorsPage /> }

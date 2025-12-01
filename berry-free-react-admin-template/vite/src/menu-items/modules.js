@@ -1,7 +1,7 @@
 // assets
-import { IconChartHistogram, IconBriefcase, IconNews, IconShield, IconPlaystationX, IconArrowsShuffle, IconRobot, IconBook, IconChartDots } from '@tabler/icons-react';
+import { IconChartHistogram, IconBriefcase, IconNews, IconShield, IconPlaystationX, IconArrowsShuffle, IconRobot, IconBook, IconChartDots, IconCalculator } from '@tabler/icons-react';
 
-const icons = { IconChartHistogram, IconBriefcase, IconNews, IconShield, IconPlaystationX, IconArrowsShuffle, IconRobot, IconBook, IconChartDots };
+const icons = { IconChartHistogram, IconBriefcase, IconNews, IconShield, IconPlaystationX, IconArrowsShuffle, IconRobot, IconBook, IconChartDots, IconCalculator };
 
 // ==============================|| MODULES MENU ITEMS ||============================== //
 
@@ -16,6 +16,7 @@ const modules = {
     { id: 'mod-risk', title: 'Risk', type: 'item', url: '/modules/risk', icon: icons.IconShield },
     { id: 'mod-simulation', title: 'Simulation', type: 'item', url: '/modules/simulation', icon: icons.IconPlaystationX },
     { id: 'mod-trading', title: 'Trading', type: 'item', url: '/modules/trading', icon: icons.IconArrowsShuffle },
+    { id: 'mod-alm', title: 'ALM', type: 'item', url: '/modules/alm', icon: icons.IconCalculator },
     { id: 'mod-ai', title: 'AI', type: 'item', url: '/modules/ai', icon: icons.IconRobot },
     { id: 'mod-learning', title: 'Learning', type: 'item', url: '/modules/learning', icon: icons.IconBook },
     { id: 'mod-indicators', title: 'Indicators', type: 'item', url: '/modules/indicators', icon: icons.IconChartDots }

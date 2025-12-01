@@ -10,31 +10,69 @@ module.exports = (sequelize, Sequelize) => {
       },
       portfolio_id: {
         type: Sequelize.UUID,
+        allowNull: true,
+        comment: 'Portfolio-specific limit, null for global limits',
+      },
+      trader_id: {
+        type: Sequelize.UUID,
+        allowNull: true,
+        comment: 'Trader-specific limit, null for non-trader limits',
+      },
+      desk_id: {
+        type: Sequelize.UUID,
+        allowNull: true,
+        comment: 'Desk-specific limit, null for non-desk limits',
+      },
+      instrument_type: {
+        type: Sequelize.ENUM('ALL', 'BOND', 'EQUITY', 'DERIVATIVE', 'FX', 'COMMODITY'),
         allowNull: false,
+        defaultValue: 'ALL',
       },
       limit_type: {
-        type: Sequelize.ENUM('DAILY_LOSS', 'POSITION_SIZE', 'CONCENTRATION'),
+        type: Sequelize.ENUM('EXPOSURE', 'VAR', 'PNL_MAX', 'STRESS_LOSS', 'DV01', 'CONVEXITY'),
         allowNull: false,
       },
-      threshold: {
-        type: Sequelize.DECIMAL(18, 4),
+      limit_value: {
+        type: Sequelize.DECIMAL(20, 2),
         allowNull: false,
-        defaultValue: 0,
       },
-      current_value: {
-        type: Sequelize.DECIMAL(18, 4),
+      currency: {
+        type: Sequelize.STRING(3),
         allowNull: false,
-        defaultValue: 0,
+        defaultValue: 'EUR',
+      },
+      time_horizon: {
+        type: Sequelize.ENUM('INTRADAY', 'DAILY', 'WEEKLY', 'MONTHLY'),
+        allowNull: false,
+        defaultValue: 'DAILY',
+      },
+      confidence_level: {
+        type: Sequelize.DECIMAL(5, 4),
+        allowNull: true,
+        defaultValue: 0.95,
+        comment: 'For VaR calculations (0.95 = 95%)',
       },
       is_active: {
         type: Sequelize.BOOLEAN,
         allowNull: false,
         defaultValue: true,
       },
-      alert_triggered: {
-        type: Sequelize.BOOLEAN,
+      breach_action: {
+        type: Sequelize.ENUM('ALERT', 'RESTRICT', 'BLOCK'),
         allowNull: false,
-        defaultValue: false,
+        defaultValue: 'ALERT',
+      },
+      created_by: {
+        type: Sequelize.UUID,
+        allowNull: false,
+      },
+      approved_by: {
+        type: Sequelize.UUID,
+        allowNull: true,
+      },
+      approval_date: {
+        type: Sequelize.DATE,
+        allowNull: true,
       },
     },
     {

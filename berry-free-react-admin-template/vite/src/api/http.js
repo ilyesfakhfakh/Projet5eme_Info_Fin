@@ -82,7 +82,7 @@ async function request(path, { method = 'GET', headers = {}, body, params, auth 
     if (responseContentType.includes('application/json')) {
       return res.json();
     }
-    
+
     return res.text();
     
   } catch (error) {

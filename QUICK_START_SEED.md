@@ -56,14 +56,20 @@ News:   http://localhost:3000/free/modules/news
 - ✅ **10 Economic Events** (upcoming events)
 - ✅ **10 Market News** (various priorities)
 
+### Module Portfolio
+- ✅ **4 Sample Portfolios** (for admin user)
+- ✅ **Multiple Currencies** (EUR, USD)
+
 ---
 
 ## 🎯 Commandes Disponibles
 
 ```bash
-npm run seed:all      # Tout remplir (Market + News)
-npm run seed:market   # Market Data uniquement
-npm run seed:news     # News Data uniquement
+npm run seed:all         # Tout remplir (Market + News)
+npm run seed:market      # Market Data uniquement
+npm run seed:news        # News Data uniquement
+npm run seed:portfolio   # Portfolios uniquement
+npm run seed:auth        # Utilisateurs et rôles
 ```
 
 ---
@@ -88,6 +94,7 @@ Vous verrez:
 ✅ News Articles created: 8
 ✅ Economic Events created: 10
 ✅ Market News created: 10
+✅ Portfolios created: 4
 ```
 
 ### Dans le navigateur:

@@ -1,23 +1,35 @@
-const config = require('../config/db.config');
+const config = require('../../config/database');
 
 const Sequelize = require('sequelize');
-const sequelize = new Sequelize(
-  config.DB,
-  config.USER,
-  config.PASSWORD,
-  {
-    host: config.HOST,
-    dialect: config.dialect,
-    operatorsAliases: 0,
-    logging: 0,
-    pool: {
-      max: config.pool.max,
-      min: config.pool.min,
-      acquire: config.pool.acquire,
-      idle: config.pool.idle
+const env = process.env.NODE_ENV || 'development';
+const dbConfig = config[env];
+
+let sequelize;
+if (dbConfig.dialect === 'sqlite') {
+  sequelize = new Sequelize({
+    dialect: 'sqlite',
+    storage: dbConfig.storage,
+    logging: dbConfig.logging || false
+  });
+} else {
+  sequelize = new Sequelize(
+    dbConfig.database || dbConfig.DB,
+    dbConfig.username || dbConfig.USER,
+    dbConfig.password || dbConfig.PASSWORD,
+    {
+      host: dbConfig.host || dbConfig.HOST,
+      dialect: dbConfig.dialect,
+      operatorsAliases: 0,
+      logging: dbConfig.logging || 0,
+      pool: dbConfig.pool || {
+        max: 5,
+        min: 0,
+        acquire: 30000,
+        idle: 10000
+      }
     }
-  }
-)
+  );
+}
 
 const db = {}
 
@@ -51,6 +63,10 @@ db.order_executions = require('./trading/order-execution.model')(sequelize, Sequ
 db.trading_strategies = require('./trading/trading-strategy.model')(sequelize, Sequelize)
 db.risk_assessments = require('./risk/risk-assessment.model')(sequelize, Sequelize)
 db.risk_limits = require('./risk/risk-limit.model')(sequelize, Sequelize)
+db.risk_metrics = require('./risk/risk-metrics.model')(sequelize, Sequelize)
+db.risk_alerts = require('./risk/risk-alerts.model')(sequelize, Sequelize)
+db.risk_logs = require('./risk/risk-logs.model')(sequelize, Sequelize)
+db.stress_scenarios = require('./risk/stress-scenarios.model')(sequelize, Sequelize)
 db.stop_losses = require('./risk/stop-loss.model')(sequelize, Sequelize)
 db.technical_indicators = require('./indicators/technical-indicator.model')(sequelize, Sequelize)
 db.indicator_values = require('./indicators/indicator-value.model')(sequelize, Sequelize)
@@ -74,6 +90,11 @@ db.admin_dashboards = require('./admin/admin-dashboard.model')(sequelize, Sequel
 db.system_configurations = require('./admin/system-configuration.model')(sequelize, Sequelize)
 db.audit_logs = require('./admin/audit-log.model')(sequelize, Sequelize)
 db.system_alerts = require('./admin/system-alert.model')(sequelize, Sequelize)
+db.alm_positions = require('./alm/alm-position.model')(sequelize, Sequelize)
+db.cashflow_projections = require('./alm/cashflow-projection.model')(sequelize, Sequelize)
+db.interest_rate_sensitivities = require('./alm/interest-rate-sensitivity.model')(sequelize, Sequelize)
+db.liquidity_gaps = require('./alm/liquidity-gap.model')(sequelize, Sequelize)
+db.yield_curves = require('./alm/yield-curve.model')(sequelize, Sequelize)
 
 db.users.hasOne(db.user_preferences, {
   foreignKey: { name: 'user_id', allowNull: false, unique: true },
@@ -213,6 +234,15 @@ db.portfolios.hasMany(db.positions, {
 })
 db.positions.belongsTo(db.portfolios, {
   foreignKey: { name: 'portfolio_id', allowNull: false },
+})
+
+db.positions.belongsTo(db.assets, {
+  foreignKey: { name: 'asset_id', allowNull: true },
+  as: 'asset'
+})
+db.assets.hasMany(db.positions, {
+  foreignKey: { name: 'asset_id', allowNull: true },
+  as: 'positions'
 })
 
 db.portfolios.hasMany(db.transactions, {
@@ -423,6 +453,243 @@ db.assets.hasMany(db.prediction_models, {
   as: 'prediction_models',
   onDelete: 'SET NULL',
   onUpdate: 'CASCADE',
+})
+
+// ALM associations
+db.portfolios.hasMany(db.alm_positions, {
+  foreignKey: { name: 'portfolio_id', allowNull: false },
+  as: 'alm_positions',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE',
+})
+db.alm_positions.belongsTo(db.portfolios, {
+  foreignKey: { name: 'portfolio_id', allowNull: false },
+})
+
+db.portfolios.hasMany(db.cashflow_projections, {
+  foreignKey: { name: 'portfolio_id', allowNull: false },
+  as: 'cashflow_projections',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE',
+})
+db.cashflow_projections.belongsTo(db.portfolios, {
+  foreignKey: { name: 'portfolio_id', allowNull: false },
+})
+
+db.portfolios.hasMany(db.interest_rate_sensitivities, {
+  foreignKey: { name: 'portfolio_id', allowNull: false },
+  as: 'interest_rate_sensitivities',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE',
+})
+db.interest_rate_sensitivities.belongsTo(db.portfolios, {
+  foreignKey: { name: 'portfolio_id', allowNull: false },
+})
+
+db.portfolios.hasMany(db.liquidity_gaps, {
+  foreignKey: { name: 'portfolio_id', allowNull: false },
+  as: 'liquidity_gaps',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE',
+})
+db.liquidity_gaps.belongsTo(db.portfolios, {
+  foreignKey: { name: 'portfolio_id', allowNull: false },
+})
+
+db.yield_curves.hasMany(db.interest_rate_sensitivities, {
+  foreignKey: { name: 'yield_curve_id', allowNull: false },
+  as: 'interest_rate_sensitivities',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE',
+})
+db.interest_rate_sensitivities.belongsTo(db.yield_curves, {
+  foreignKey: { name: 'yield_curve_id', allowNull: false },
+})
+
+db.users.hasMany(db.alm_positions, {
+  foreignKey: { name: 'created_by', allowNull: false },
+  as: 'created_alm_positions',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE',
+})
+db.alm_positions.belongsTo(db.users, {
+  foreignKey: { name: 'created_by', allowNull: false },
+})
+
+db.users.hasMany(db.cashflow_projections, {
+  foreignKey: { name: 'created_by', allowNull: true },
+  as: 'created_cashflow_projections',
+  onDelete: 'SET NULL',
+  onUpdate: 'CASCADE',
+})
+db.cashflow_projections.belongsTo(db.users, {
+  foreignKey: { name: 'created_by', allowNull: true },
+})
+
+db.users.hasMany(db.interest_rate_sensitivities, {
+  foreignKey: { name: 'created_by', allowNull: false },
+  as: 'created_interest_rate_sensitivities',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE',
+})
+db.interest_rate_sensitivities.belongsTo(db.users, {
+  foreignKey: { name: 'created_by', allowNull: false },
+})
+
+db.users.hasMany(db.liquidity_gaps, {
+  foreignKey: { name: 'created_by', allowNull: false },
+  as: 'created_liquidity_gaps',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE',
+})
+db.liquidity_gaps.belongsTo(db.users, {
+  foreignKey: { name: 'created_by', allowNull: false },
+})
+
+db.users.hasMany(db.yield_curves, {
+  foreignKey: { name: 'created_by', allowNull: true },
+  as: 'created_yield_curves',
+  onDelete: 'SET NULL',
+  onUpdate: 'CASCADE',
+})
+db.yield_curves.belongsTo(db.users, {
+  foreignKey: { name: 'created_by', allowNull: true },
+})
+
+// Risk module associations
+db.portfolios.hasMany(db.risk_limits, {
+  foreignKey: { name: 'portfolio_id', allowNull: true },
+  as: 'comprehensive_risk_limits',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE',
+})
+db.risk_limits.belongsTo(db.portfolios, {
+  foreignKey: { name: 'portfolio_id', allowNull: true },
+  as: 'portfolio_limit',
+})
+
+db.portfolios.hasMany(db.risk_metrics, {
+  foreignKey: { name: 'portfolio_id', allowNull: false },
+  as: 'risk_metrics',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE',
+})
+db.risk_metrics.belongsTo(db.portfolios, {
+  foreignKey: { name: 'portfolio_id', allowNull: false },
+})
+
+db.portfolios.hasMany(db.risk_alerts, {
+  foreignKey: { name: 'portfolio_id', allowNull: false },
+  as: 'risk_alerts',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE',
+})
+db.risk_alerts.belongsTo(db.portfolios, {
+  foreignKey: { name: 'portfolio_id', allowNull: false },
+})
+
+db.risk_limits.hasMany(db.risk_alerts, {
+  foreignKey: { name: 'limit_id', allowNull: false },
+  as: 'alerts',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE',
+})
+db.risk_alerts.belongsTo(db.risk_limits, {
+  foreignKey: { name: 'limit_id', allowNull: false },
+})
+
+db.users.hasMany(db.risk_limits, {
+  foreignKey: { name: 'created_by', allowNull: false },
+  as: 'created_risk_limits',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE',
+})
+db.risk_limits.belongsTo(db.users, {
+  foreignKey: { name: 'created_by', allowNull: false },
+})
+
+db.users.hasMany(db.risk_limits, {
+  foreignKey: { name: 'approved_by', allowNull: true },
+  as: 'approved_risk_limits',
+  onDelete: 'SET NULL',
+  onUpdate: 'CASCADE',
+})
+db.risk_limits.belongsTo(db.users, {
+  foreignKey: { name: 'approved_by', allowNull: true },
+  as: 'approver',
+})
+
+db.users.hasMany(db.risk_metrics, {
+  foreignKey: { name: 'created_by', allowNull: false },
+  as: 'created_risk_metrics',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE',
+})
+db.risk_metrics.belongsTo(db.users, {
+  foreignKey: { name: 'created_by', allowNull: false },
+})
+
+db.users.hasMany(db.risk_alerts, {
+  foreignKey: { name: 'acknowledged_by', allowNull: true },
+  as: 'acknowledged_alerts',
+  onDelete: 'SET NULL',
+  onUpdate: 'CASCADE',
+})
+db.risk_alerts.belongsTo(db.users, {
+  foreignKey: { name: 'acknowledged_by', allowNull: true },
+  as: 'acknowledger',
+})
+
+db.users.hasMany(db.risk_alerts, {
+  foreignKey: { name: 'resolved_by', allowNull: true },
+  as: 'resolved_alerts',
+  onDelete: 'SET NULL',
+  onUpdate: 'CASCADE',
+})
+db.risk_alerts.belongsTo(db.users, {
+  foreignKey: { name: 'resolved_by', allowNull: true },
+  as: 'resolver',
+})
+
+db.users.hasMany(db.risk_logs, {
+  foreignKey: { name: 'user_id', allowNull: false },
+  as: 'risk_logs',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE',
+})
+db.risk_logs.belongsTo(db.users, {
+  foreignKey: { name: 'user_id', allowNull: false },
+})
+
+db.portfolios.hasMany(db.risk_logs, {
+  foreignKey: { name: 'portfolio_id', allowNull: true },
+  as: 'risk_logs',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE',
+})
+db.risk_logs.belongsTo(db.portfolios, {
+  foreignKey: { name: 'portfolio_id', allowNull: true },
+})
+
+db.users.hasMany(db.stress_scenarios, {
+  foreignKey: { name: 'created_by', allowNull: false },
+  as: 'created_stress_scenarios',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE',
+})
+db.stress_scenarios.belongsTo(db.users, {
+  foreignKey: { name: 'created_by', allowNull: false },
+})
+
+db.users.hasMany(db.stress_scenarios, {
+  foreignKey: { name: 'approved_by', allowNull: true },
+  as: 'approved_stress_scenarios',
+  onDelete: 'SET NULL',
+  onUpdate: 'CASCADE',
+})
+db.stress_scenarios.belongsTo(db.users, {
+  foreignKey: { name: 'approved_by', allowNull: true },
+  as: 'approver',
 })
 
 module.exports = db;
