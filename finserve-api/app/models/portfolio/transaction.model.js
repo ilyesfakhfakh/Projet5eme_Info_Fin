@@ -12,6 +12,10 @@ module.exports = (sequelize, Sequelize) => {
         type: Sequelize.UUID,
         allowNull: false,
       },
+      position_id: {
+        type: Sequelize.UUID,
+        allowNull: false,
+      },
       asset_id: {
         type: Sequelize.UUID,
       },
@@ -38,6 +42,16 @@ module.exports = (sequelize, Sequelize) => {
         type: Sequelize.DECIMAL(18, 4),
         allowNull: false,
         defaultValue: 0,
+      },
+      currency: {
+        type: Sequelize.STRING(3),
+        allowNull: false,
+        defaultValue: 'EUR',
+      },
+      status: {
+        type: Sequelize.ENUM('PENDING', 'COMPLETED', 'FAILED', 'CANCELLED'),
+        allowNull: false,
+        defaultValue: 'COMPLETED',
       },
       timestamp: {
         type: Sequelize.DATE,

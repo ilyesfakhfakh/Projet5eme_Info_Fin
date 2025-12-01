@@ -36,6 +36,10 @@ module.exports = (app) => {
   router.post('/:id/rebalance', portfolioController.rebalance);
   router.get('/:id/optimize', portfolioController.optimize);
 
+  // Refresh portfolio calculations
+  router.post('/:id/refresh', portfolioController.refresh);
+  router.post('/refresh', portfolioController.refresh);
+
   // Position management routes
   router.post('/:portfolio_id/positions', positionsController.create);
   router.get('/:portfolio_id/positions', positionsController.findByPortfolio);

@@ -28,6 +28,17 @@ exports.create = async (req, res) => {
       });
     }
 
+    // Validate positive values
+    if (quantity <= 0) {
+      return res.status(400).json({ message: 'Quantity must be positive' });
+    }
+    if (average_price <= 0) {
+      return res.status(400).json({ message: 'Average price must be positive' });
+    }
+    if (current_price !== undefined && current_price <= 0) {
+      return res.status(400).json({ message: 'Current price must be positive' });
+    }
+
     // Check if portfolio exists
     const portfolio = await Portfolio.findByPk(portfolio_id);
     if (!portfolio) {
@@ -35,7 +46,8 @@ exports.create = async (req, res) => {
     }
 
     // Calculate market value if not provided
-    const calculatedMarketValue = market_value || (quantity * (current_price || average_price));
+    const finalCurrentPrice = current_price || average_price;
+    const calculatedMarketValue = market_value || (quantity * finalCurrentPrice);
 
     const position = await Position.create({
       portfolio_id,
@@ -43,12 +55,11 @@ exports.create = async (req, res) => {
       asset_type: asset_type || 'STOCK',
       quantity,
       average_price,
-      current_price: current_price || average_price,
+      current_price: finalCurrentPrice,
       market_value: calculatedMarketValue,
       currency,
-      unrealized_pl: (current_price || average_price - average_price) * quantity,
-      unrealized_pl_percentage: current_price && average_price ?
-        ((current_price - average_price) / average_price) * 100 : 0
+      unrealized_pl: (finalCurrentPrice - average_price) * quantity,
+      unrealized_pl_percentage: ((finalCurrentPrice - average_price) / average_price) * 100
     });
 
     // Create initial transaction record
@@ -58,8 +69,8 @@ exports.create = async (req, res) => {
       transaction_type: 'BUY',
       quantity,
       price: average_price,
-      amount: quantity * average_price,
-      currency,
+      total_amount: quantity * average_price,
+      currency: currency,
       status: 'COMPLETED'
     });
 
@@ -131,15 +142,26 @@ exports.update = async (req, res) => {
       return res.status(404).json({ message: 'Position not found' });
     }
 
+    // Validate updates
+    if (updates.quantity !== undefined && updates.quantity <= 0) {
+      return res.status(400).json({ message: 'Quantity must be positive' });
+    }
+    if (updates.average_price !== undefined && updates.average_price <= 0) {
+      return res.status(400).json({ message: 'Average price must be positive' });
+    }
+    if (updates.current_price !== undefined && updates.current_price <= 0) {
+      return res.status(400).json({ message: 'Current price must be positive' });
+    }
+
     // Recalculate derived fields if prices changed
-    if (updates.current_price || updates.quantity) {
-      const newQuantity = updates.quantity || position.quantity;
-      const newCurrentPrice = updates.current_price || position.current_price;
-      const newAveragePrice = updates.average_price || position.average_price;
+    if (updates.current_price !== undefined || updates.quantity !== undefined || updates.average_price !== undefined) {
+      const newQuantity = updates.quantity !== undefined ? updates.quantity : position.quantity;
+      const newCurrentPrice = updates.current_price !== undefined ? updates.current_price : position.current_price;
+      const newAveragePrice = updates.average_price !== undefined ? updates.average_price : position.average_price;
 
       updates.market_value = newQuantity * newCurrentPrice;
       updates.unrealized_pl = (newCurrentPrice - newAveragePrice) * newQuantity;
-      updates.unrealized_pl_percentage = newAveragePrice ?
+      updates.unrealized_pl_percentage = newAveragePrice > 0 ?
         ((newCurrentPrice - newAveragePrice) / newAveragePrice) * 100 : 0;
     }
 

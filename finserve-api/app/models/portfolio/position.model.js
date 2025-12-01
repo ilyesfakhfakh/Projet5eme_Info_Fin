@@ -30,11 +30,17 @@ module.exports = (sequelize, Sequelize) => {
         type: Sequelize.DECIMAL(18, 6),
         allowNull: false,
         defaultValue: 0,
+        validate: {
+          min: 0.000001, // Must be positive
+        },
       },
       current_price: {
         type: Sequelize.DECIMAL(18, 6),
         allowNull: false,
         defaultValue: 0,
+        validate: {
+          min: 0.000001, // Must be positive
+        },
       },
       market_value: {
         type: Sequelize.DECIMAL(18, 4),

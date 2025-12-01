@@ -4,6 +4,7 @@ import {
   createPortfolio,
   updatePortfolio,
   deletePortfolio,
+  refreshAllPortfolios,
   createPosition,
   getPortfolioPositions,
   updatePosition,
@@ -99,6 +100,23 @@ export default function PortfolioPage() {
     }
     setLoading(false);
   }
+
+  const handleRefreshAll = async () => {
+    try {
+      setLoading(true);
+      const res = await refreshAllPortfolios({ user_id: user?.user_id });
+      if (res && res.success) {
+        setSuccess(`Calculs mis à jour pour ${res.data?.length || 0} portefeuilles`);
+        fetchData(); // Refresh the list
+      } else {
+        setError('Erreur lors de la mise à jour des calculs');
+      }
+    } catch (e) {
+      console.error('Error refreshing portfolios:', e);
+      setError('Erreur lors de la mise à jour des calculs');
+    }
+    setLoading(false);
+  };
 
   useEffect(() => {
     fetchData();
@@ -284,6 +302,9 @@ export default function PortfolioPage() {
             <Stack direction="row" sx={{ gap: 1 }}>
               <Button variant="outlined" startIcon={<RefreshIcon />} onClick={fetchData}>
                 Actualiser
+              </Button>
+              <Button variant="outlined" startIcon={<RefreshIcon />} onClick={handleRefreshAll} disabled={loading}>
+                Recalculer Tout
               </Button>
               <Button variant="contained" startIcon={<AddIcon />} onClick={() => setOpenCreate(true)}>
                 Nouveau Portefeuille

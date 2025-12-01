@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from 'contexts/auth';
 import {
   Grid,
@@ -28,7 +28,11 @@ import {
   Select,
   MenuItem,
   IconButton,
-  Tooltip
+  Tooltip,
+  Badge,
+  Snackbar,
+  Fab,
+  Divider
 } from '@mui/material';
 import {
   TrendingUp,
@@ -39,17 +43,47 @@ import {
   Edit,
   Delete,
   Refresh,
-  PlayArrow
+  PlayArrow,
+  Notifications,
+  Assessment,
+  Timeline,
+  PieChart,
+  BarChart,
+  ShowChart,
+  Settings,
+  CheckCircle,
+  Error,
+  Info
 } from '@mui/icons-material';
 import MainCard from 'ui-component/cards/MainCard';
 import http from '../../../api/http';
+import wsService from '../../../api/websocket';
 import { listPortfolios } from '../../../api/portfolios';
+import {
+  getExposure,
+  getRiskMetrics,
+  getLimits,
+  getAlerts,
+  getStressScenarios,
+  calculateVaR,
+  runRiskAssessment,
+  monitorRiskLimits
+} from '../../../api/risk';
+import {
+  ExposureBreakdownChart,
+  PnLVsLimitsChart,
+  VaRTrendChart,
+  StressTestImpactChart,
+  RiskMetricsGauge
+} from '../../../components/charts/RiskCharts';
 
 export default function RiskPage() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState(0);
   const [exposureData, setExposureData] = useState(null);
+  const [exposureBreakdown, setExposureBreakdown] = useState([]);
   const [riskMetrics, setRiskMetrics] = useState([]);
+  const [varHistory, setVarHistory] = useState([]);
   const [limits, setLimits] = useState([]);
   const [alerts, setAlerts] = useState([]);
   const [stressScenarios, setStressScenarios] = useState([]);
@@ -60,6 +94,63 @@ export default function RiskPage() {
   const [runningStressTest, setRunningStressTest] = useState(false);
   const [selectedPortfolio, setSelectedPortfolio] = useState('');
   const [portfolios, setPortfolios] = useState([]);
+  const [wsConnected, setWsConnected] = useState(false);
+  const [realTimeAlerts, setRealTimeAlerts] = useState([]);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
+  const wsInitialized = useRef(false);
+
+  // Initialize WebSocket connection
+  useEffect(() => {
+    if (!wsInitialized.current && user?.token) {
+      wsInitialized.current = true;
+
+      // Get token for WebSocket auth
+      const token = localStorage.getItem('auth');
+      const parsed = token ? JSON.parse(token) : null;
+      const wsToken = parsed?.token;
+
+      wsService.connect(wsToken);
+
+      // Set up WebSocket event listeners
+      wsService.on('connected', () => {
+        setWsConnected(true);
+        console.log('✅ WebSocket connected for risk alerts');
+        wsService.subscribeToRiskAlerts(user?.user_id);
+      });
+
+      wsService.on('disconnected', () => {
+        setWsConnected(false);
+        console.log('❌ WebSocket disconnected');
+      });
+
+      wsService.on('risk_alert_triggered', (alertData) => {
+        console.log('🚨 Real-time risk alert:', alertData);
+        setRealTimeAlerts(prev => [alertData, ...prev.slice(0, 9)]); // Keep last 10 alerts
+        setSnackbar({
+          open: true,
+          message: `Risk Alert: ${alertData.description || alertData.alert_type}`,
+          severity: alertData.severity === 'CRITICAL' ? 'error' : 'warning'
+        });
+        // Refresh alerts list
+        loadAlerts();
+      });
+
+      wsService.on('error', (error) => {
+        console.error('WebSocket error:', error);
+        setWsConnected(false);
+      });
+    }
+
+    return () => {
+      // Cleanup WebSocket listeners on unmount
+      if (wsInitialized.current) {
+        wsService.off('connected');
+        wsService.off('disconnected');
+        wsService.off('risk_alert_triggered');
+        wsService.off('error');
+      }
+    };
+  }, [user]);
 
   useEffect(() => {
     loadData();
@@ -67,15 +158,40 @@ export default function RiskPage() {
 
   useEffect(() => {
     if (selectedPortfolio) {
-      // Reload metrics when portfolio changes
       loadData();
     }
   }, [selectedPortfolio]);
+
+  const loadAlerts = async () => {
+    try {
+      const alertsRes = await getAlerts({ portfolio_id: selectedPortfolio });
+      if (alertsRes.success) {
+        setAlerts(alertsRes.data);
+      }
+    } catch (error) {
+      console.error('Error loading alerts:', error);
+    }
+  };
+
+  const processExposureBreakdown = (exposure) => {
+    if (!exposure) return [];
+
+    // Mock breakdown by trader/desk/product - in real app this would come from API
+    const breakdown = [
+      { label: 'Trader A', value: exposure.gross_long * 0.4 },
+      { label: 'Trader B', value: exposure.gross_long * 0.35 },
+      { label: 'Desk Alpha', value: exposure.gross_long * 0.15 },
+      { label: 'Desk Beta', value: exposure.gross_long * 0.1 },
+    ];
+
+    return breakdown.filter(item => item.value > 0);
+  };
 
   const loadData = async () => {
     setLoading(true);
     try {
       // Load portfolios first (filtered by user)
+      console.log('🔄 Loading risk dashboard data...');
       console.log('Loading portfolios for user:', user?.user_id);
       try {
         const portfoliosRes = await listPortfolios({ user_id: user?.user_id });
@@ -117,25 +233,79 @@ export default function RiskPage() {
       // Load risk data (requires auth) - load individually to avoid Promise.all failure
       try {
         const riskPromises = [
-          http.get('/risk/exposure').catch(err => ({ error: err, endpoint: 'exposure' })),
-          selectedPortfolio ? http.get(`/risk/metrics?portfolio_id=${selectedPortfolio}`).catch(err => ({ error: err, endpoint: 'metrics' })) : http.get('/risk/metrics').catch(err => ({ error: err, endpoint: 'metrics' })),
-          http.get('/risk/limits').catch(err => ({ error: err, endpoint: 'limits' })),
-          http.get('/risk/alerts').catch(err => ({ error: err, endpoint: 'alerts' })),
-          http.get('/risk/stress/scenarios').catch(err => ({ error: err, endpoint: 'scenarios' }))
+          selectedPortfolio ? getExposure({ portfolio_id: selectedPortfolio }) : getExposure(),
+          selectedPortfolio ? getRiskMetrics({ portfolio_id: selectedPortfolio }) : getRiskMetrics(),
+          getLimits(),
+          getAlerts(),
+          getStressScenarios()
         ];
 
         const [exposureRes, metricsRes, limitsRes, alertsRes, scenariosRes] = await Promise.all(riskPromises);
 
-        if (exposureRes.success) setExposureData(exposureRes.data);
-        if (metricsRes.success) setRiskMetrics(metricsRes.data);
+        console.log('📊 Risk data loaded:');
+        console.log('- Exposure:', exposureRes.success ? '✅' : '❌', exposureRes.data);
+        console.log('- Metrics:', metricsRes.success ? '✅' : '❌', metricsRes.data?.length || 0, 'records');
+        console.log('- Limits:', limitsRes.success ? '✅' : '❌', limitsRes.data?.length || 0, 'records');
+        console.log('- Alerts:', alertsRes.success ? '✅' : '❌', alertsRes.data?.length || 0, 'records');
+        console.log('- Scenarios:', scenariosRes.success ? '✅' : '❌', scenariosRes.data?.length || 0, 'records');
+
+        if (exposureRes.success) {
+          setExposureData(exposureRes.data);
+          setExposureBreakdown(processExposureBreakdown(exposureRes.data));
+        }
+        if (metricsRes.success) {
+          setRiskMetrics(metricsRes.data);
+          // Generate mock VaR history for chart
+          const mockVarHistory = metricsRes.data
+            .filter(m => m.metric_type === 'VAR_95')
+            .map((metric, index) => ({
+              timestamp: new Date(Date.now() - (9 - index) * 3600000).toISOString(), // Last 10 hours
+              value: metric.value + (Math.random() - 0.5) * 1000 // Add some variation
+            }));
+          setVarHistory(mockVarHistory);
+        }
         if (limitsRes.success) setLimits(limitsRes.data);
         if (alertsRes.success) setAlerts(alertsRes.data);
         if (scenariosRes.success) setStressScenarios(scenariosRes.data);
 
+        // If we have a selected portfolio but no risk metrics, calculate them automatically
+        if (selectedPortfolio && metricsRes.success && (!metricsRes.data || metricsRes.data.length === 0)) {
+          console.log('⚠️ No risk metrics found, calculating automatically...');
+          try {
+            const assessmentResult = await runRiskAssessment({ portfolio_id: selectedPortfolio });
+            console.log('✅ Risk assessment completed:', assessmentResult);
+            // Reload metrics after calculation
+            const newMetricsRes = await getRiskMetrics({ portfolio_id: selectedPortfolio });
+            if (newMetricsRes.success) {
+              setRiskMetrics(newMetricsRes.data);
+              console.log('📊 Risk metrics updated:', newMetricsRes.data?.length || 0, 'records');
+            }
+          } catch (calcError) {
+            console.error('❌ Error auto-calculating risk metrics:', calcError);
+          }
+        }
+
+        // Run risk monitoring to check for limit breaches and generate alerts
+        if (selectedPortfolio) {
+          try {
+            console.log('🔍 Running risk monitoring for portfolio:', selectedPortfolio);
+            const monitorResult = await monitorRiskLimits({ portfolio_id: selectedPortfolio });
+            console.log('✅ Risk monitoring completed:', monitorResult);
+            // Reload alerts after monitoring
+            const newAlertsRes = await getAlerts({ portfolio_id: selectedPortfolio });
+            if (newAlertsRes.success) {
+              setAlerts(newAlertsRes.data);
+              console.log('🚨 Alerts updated:', newAlertsRes.data?.length || 0, 'alerts');
+            }
+          } catch (monitorError) {
+            console.error('❌ Error running risk monitoring:', monitorError);
+          }
+        }
+
         // Log any failed requests
         [exposureRes, metricsRes, limitsRes, alertsRes, scenariosRes].forEach((res, index) => {
           if (res.error) {
-            console.error(`Risk API ${res.endpoint} failed:`, res.error);
+            console.error(`Risk API ${['exposure', 'metrics', 'limits', 'alerts', 'scenarios'][index]} failed:`, res.error);
           }
         });
 
@@ -148,19 +318,21 @@ export default function RiskPage() {
     setLoading(false);
   };
 
-  const calculateVaR = async () => {
+  const handleCalculateVaR = async () => {
     if (!selectedPortfolio) {
       alert('Please select a portfolio first');
       return;
     }
     try {
-      const response = await http.post('/risk/calculate/var', {
+      const response = await calculateVaR({
         portfolio_id: selectedPortfolio,
         confidence: 0.95,
         time_horizon: 1
       });
-      if (response.success) {
+      if (response && response.success) {
         loadData(); // Refresh metrics
+      } else {
+        console.error('VaR calculation failed:', response);
       }
     } catch (error) {
       console.error('Error calculating VaR:', error);
@@ -258,8 +430,23 @@ export default function RiskPage() {
 
   return (
     <Box>
+      {/* Header with Connection Status */}
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4">Risk Management Dashboard</Typography>
+        <Box display="flex" alignItems="center" gap={2}>
+          <Typography variant="h4">Risk Management Dashboard</Typography>
+          <Chip
+            icon={wsConnected ? <CheckCircle /> : <Error />}
+            label={wsConnected ? "Live" : "Offline"}
+            color={wsConnected ? "success" : "error"}
+            size="small"
+            variant="outlined"
+          />
+          {realTimeAlerts.length > 0 && (
+            <Badge badgeContent={realTimeAlerts.length} color="error">
+              <Notifications color="action" />
+            </Badge>
+          )}
+        </Box>
         <Box display="flex" gap={2} alignItems="center">
           <FormControl size="small" sx={{ minWidth: 200 }}>
             <InputLabel>Portfolio</InputLabel>
@@ -292,93 +479,178 @@ export default function RiskPage() {
         </Box>
       </Box>
 
+      {/* Real-time Alerts Banner */}
+      {realTimeAlerts.length > 0 && (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          <Typography variant="subtitle2" gutterBottom>
+            Recent Risk Alerts:
+          </Typography>
+          {realTimeAlerts.slice(0, 3).map((alert, index) => (
+            <Typography key={index} variant="body2">
+              • {alert.description || alert.alert_type} ({new Date(alert.timestamp).toLocaleTimeString()})
+            </Typography>
+          ))}
+        </Alert>
+      )}
+
       <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)} sx={{ mb: 3 }}>
-        <Tab label="Overview" />
-        <Tab label="Limits Management" />
-        <Tab label="Alerts" />
-        <Tab label="Stress Testing" />
+        <Tab icon={<Assessment />} label="Dashboard" />
+        <Tab icon={<Settings />} label="Limits Management" />
+        <Tab icon={<Notifications />} label="Alerts & Monitoring" />
+        <Tab icon={<Timeline />} label="Stress Testing" />
       </Tabs>
 
       {activeTab === 0 && (
         <Grid container spacing={3}>
-          {/* Exposure Summary */}
+          {/* Key Risk Metrics Cards */}
+          <Grid item xs={12} md={3}>
+            <RiskMetricsGauge
+              value={riskMetrics.find(m => m.metric_type === 'VAR_95')?.value || 0}
+              maxValue={limits.find(l => l.limit_type === 'VAR')?.limit_value || 10000}
+              title="VaR (95%)"
+              color="warning"
+            />
+          </Grid>
+          <Grid item xs={12} md={3}>
+            <RiskMetricsGauge
+              value={exposureData?.net || 0}
+              maxValue={limits.find(l => l.limit_type === 'EXPOSURE')?.limit_value || 100000}
+              title="Net Exposure"
+              color="primary"
+            />
+          </Grid>
+          <Grid item xs={12} md={3}>
+            <RiskMetricsGauge
+              value={Math.abs(exposureData?.net || 0)}
+              maxValue={limits.find(l => l.limit_type === 'PNL_MAX')?.limit_value || 50000}
+              title="P&L at Risk"
+              color="error"
+            />
+          </Grid>
+          <Grid item xs={12} md={3}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" color="success.main" gutterBottom>
+                  Portfolio Health
+                </Typography>
+                <Typography variant="h4" color="success.main">
+                  {alerts.filter(a => a.status === 'ACTIVE' && a.severity === 'CRITICAL').length === 0 ? 'Good' : 'At Risk'}
+                </Typography>
+                <Typography variant="body2" color="textSecondary">
+                  {alerts.filter(a => a.status === 'ACTIVE').length} active alerts
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* Charts Row */}
+          <Grid item xs={12} md={6}>
+            <ExposureBreakdownChart data={exposureBreakdown} />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <VaRTrendChart varData={varHistory} />
+          </Grid>
+
+          {/* P&L vs Limits Chart */}
+          <Grid item xs={12} md={6}>
+            <PnLVsLimitsChart
+              pnl={exposureData?.net || 0}
+              limits={{ pnlLimit: limits.find(l => l.limit_type === 'PNL_MAX')?.limit_value }}
+            />
+          </Grid>
+
+          {/* Risk Actions */}
           <Grid item xs={12} md={6}>
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
-                  Portfolio Exposure
+                  Risk Management Actions
                 </Typography>
-                {exposureData ? (
-                  <Box>
-                    <Box display="flex" justifyContent="space-between" mb={1}>
-                      <Typography>Gross Long:</Typography>
-                      <Typography color="success.main">{formatCurrency(exposureData.gross_long)}</Typography>
-                    </Box>
-                    <Box display="flex" justifyContent="space-between" mb={1}>
-                      <Typography>Gross Short:</Typography>
-                      <Typography color="error.main">{formatCurrency(exposureData.gross_short)}</Typography>
-                    </Box>
-                    <Box display="flex" justifyContent="space-between" mb={2}>
-                      <Typography fontWeight="bold">Net Exposure:</Typography>
-                      <Typography fontWeight="bold" color={exposureData.net >= 0 ? 'success.main' : 'error.main'}>
-                        {formatCurrency(exposureData.net)}
-                      </Typography>
-                    </Box>
-                  </Box>
-                ) : (
-                  <Typography>No exposure data available</Typography>
-                )}
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Risk Metrics */}
-          <Grid item xs={12} md={6}>
-            <Card>
-              <CardContent>
-                <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                  <Typography variant="h6">Risk Metrics</Typography>
-                  <Button variant="outlined" size="small" onClick={calculateVaR}>
-                    Calculate VaR
+                <Box display="flex" flexDirection="column" gap={2}>
+                  <Button
+                    variant="outlined"
+                    startIcon={<Assessment />}
+                    onClick={handleCalculateVaR}
+                    disabled={!selectedPortfolio}
+                  >
+                    Recalculate VaR
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    startIcon={<Shield />}
+                    onClick={async () => {
+                      if (!selectedPortfolio) return;
+                      try {
+                        await runRiskAssessment({ portfolio_id: selectedPortfolio });
+                        loadData();
+                      } catch (error) {
+                        console.error('Error running risk assessment:', error);
+                      }
+                    }}
+                    disabled={!selectedPortfolio}
+                  >
+                    Full Risk Assessment
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    startIcon={<Refresh />}
+                    onClick={async () => {
+                      if (!selectedPortfolio) return;
+                      try {
+                        await monitorRiskLimits({ portfolio_id: selectedPortfolio });
+                        loadAlerts();
+                      } catch (error) {
+                        console.error('Error monitoring limits:', error);
+                      }
+                    }}
+                    disabled={!selectedPortfolio}
+                  >
+                    Check Limits
                   </Button>
                 </Box>
-                {riskMetrics.slice(0, 3).map((metric) => (
-                  <Box key={metric.metric_id} display="flex" justifyContent="space-between" mb={1}>
-                    <Typography>{metric.metric_type} ({metric.confidence_level * 100}%):</Typography>
-                    <Typography color="error.main">{formatCurrency(metric.value)}</Typography>
-                  </Box>
-                ))}
-                {riskMetrics.length === 0 && (
-                  <Typography>No risk metrics calculated yet</Typography>
-                )}
               </CardContent>
             </Card>
           </Grid>
 
-          {/* Active Alerts */}
+          {/* Active Alerts Summary */}
           <Grid item xs={12}>
             <Card>
               <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Active Alerts
-                </Typography>
+                <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                  <Typography variant="h6">Active Risk Alerts</Typography>
+                  <Chip
+                    label={`${alerts.filter(a => a.status === 'ACTIVE').length} active`}
+                    color={alerts.filter(a => a.status === 'ACTIVE').length > 0 ? 'error' : 'success'}
+                    size="small"
+                  />
+                </Box>
                 {alerts.filter(a => a.status === 'ACTIVE').length > 0 ? (
-                  alerts.filter(a => a.status === 'ACTIVE').map((alert) => (
-                    <Alert
-                      key={alert.alert_id}
-                      severity={getSeverityColor(alert.severity)}
-                      action={
-                        <Button color="inherit" size="small" onClick={() => acknowledgeAlert(alert.alert_id)}>
-                          Acknowledge
-                        </Button>
-                      }
-                      sx={{ mb: 1 }}
-                    >
-                      {alert.description || `${alert.alert_type} - Current: ${formatCurrency(alert.current_value)}, Limit: ${formatCurrency(alert.limit_value)}`}
-                    </Alert>
-                  ))
+                  <Box>
+                    {alerts.filter(a => a.status === 'ACTIVE').slice(0, 5).map((alert) => (
+                      <Alert
+                        key={alert.alert_id}
+                        severity={getSeverityColor(alert.severity)}
+                        action={
+                          <Button color="inherit" size="small" onClick={() => acknowledgeAlert(alert.alert_id)}>
+                            Acknowledge
+                          </Button>
+                        }
+                        sx={{ mb: 1 }}
+                      >
+                        <Typography variant="subtitle2">{alert.alert_type}</Typography>
+                        <Typography variant="body2">
+                          {alert.description || `Current: ${formatCurrency(alert.current_value)}, Limit: ${formatCurrency(alert.limit_value)}`}
+                        </Typography>
+                      </Alert>
+                    ))}
+                    {alerts.filter(a => a.status === 'ACTIVE').length > 5 && (
+                      <Button size="small" onClick={() => setActiveTab(2)}>
+                        View All Alerts ({alerts.filter(a => a.status === 'ACTIVE').length})
+                      </Button>
+                    )}
+                  </Box>
                 ) : (
-                  <Typography>No active alerts</Typography>
+                  <Typography color="success.main">No active risk alerts</Typography>
                 )}
               </CardContent>
             </Card>
@@ -499,42 +771,39 @@ export default function RiskPage() {
       {activeTab === 3 && (
         <Grid container spacing={3}>
           {/* Available Scenarios */}
-          <Grid item xs={12} md={6}>
+          <Grid item xs={12} md={4}>
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
-                  Available Stress Scenarios
+                  Stress Test Scenarios
                 </Typography>
-                <TableContainer component={Paper} sx={{ maxHeight: 300 }}>
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>Scenario</TableCell>
-                        <TableCell>Description</TableCell>
-                        <TableCell>Action</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {stressScenarios.map((scenario) => (
-                        <TableRow key={scenario.scenario_id}>
-                          <TableCell>{scenario.name}</TableCell>
-                          <TableCell>{scenario.description}</TableCell>
-                          <TableCell>
-                            <Button
-                              size="small"
-                              variant={selectedScenario === scenario.scenario_id ? "contained" : "outlined"}
-                              onClick={() => setSelectedScenario(scenario.scenario_id)}
-                            >
-                              {selectedScenario === scenario.scenario_id ? "Selected" : "Select"}
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
+                <Box display="flex" flexDirection="column" gap={1}>
+                  {stressScenarios.map((scenario) => (
+                    <Card
+                      key={scenario.scenario_id}
+                      variant={selectedScenario === scenario.scenario_id ? "outlined" : "elevation"}
+                      sx={{
+                        cursor: 'pointer',
+                        borderColor: selectedScenario === scenario.scenario_id ? 'primary.main' : undefined
+                      }}
+                      onClick={() => setSelectedScenario(scenario.scenario_id)}
+                    >
+                      <CardContent sx={{ pb: '16px !important' }}>
+                        <Typography variant="subtitle1" fontWeight="bold">
+                          {scenario.name}
+                        </Typography>
+                        <Typography variant="body2" color="textSecondary">
+                          {scenario.description}
+                        </Typography>
+                        <Typography variant="caption" color="primary">
+                          {scenario.time_horizon_days || 1} day horizon
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </Box>
                 {stressScenarios.length === 0 && (
-                  <Typography variant="body2" color="textSecondary" sx={{ mt: 2 }}>
+                  <Typography variant="body2" color="textSecondary">
                     No stress scenarios available
                   </Typography>
                 )}
@@ -542,52 +811,69 @@ export default function RiskPage() {
             </Card>
           </Grid>
 
-          {/* Run Stress Test */}
-          <Grid item xs={12} md={6}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Run Stress Test
-                </Typography>
-                {selectedScenario && (
-                  <Box mb={2}>
-                    <Typography variant="body2" color="primary">
-                      Selected: {stressScenarios.find(s => s.scenario_id === selectedScenario)?.name}
-                    </Typography>
-                  </Box>
-                )}
-                <Button
-                  variant="contained"
-                  fullWidth
-                  onClick={runStressTest}
-                  disabled={!selectedScenario || runningStressTest}
-                  startIcon={runningStressTest ? <Refresh sx={{ animation: 'spin 1s linear infinite' }} /> : <Shield />}
-                >
-                  {runningStressTest ? 'Running Test...' : 'Run Stress Test'}
-                </Button>
-              </CardContent>
-            </Card>
-          </Grid>
+          {/* Run Stress Test & Results Chart */}
+          <Grid item xs={12} md={8}>
+            <Grid container spacing={2}>
+              {/* Run Test Card */}
+              <Grid item xs={12}>
+                <Card>
+                  <CardContent>
+                    <Box display="flex" justifyContent="space-between" alignItems="center">
+                      <Box>
+                        <Typography variant="h6">Execute Stress Test</Typography>
+                        {selectedScenario && (
+                          <Typography variant="body2" color="primary" sx={{ mt: 1 }}>
+                            Selected: {stressScenarios.find(s => s.scenario_id === selectedScenario)?.name}
+                          </Typography>
+                        )}
+                      </Box>
+                      <Button
+                        variant="contained"
+                        size="large"
+                        onClick={runStressTest}
+                        disabled={!selectedScenario || runningStressTest || !selectedPortfolio}
+                        startIcon={runningStressTest ? <Refresh sx={{ animation: 'spin 1s linear infinite' }} /> : <PlayArrow />}
+                      >
+                        {runningStressTest ? 'Running...' : 'Run Stress Test'}
+                      </Button>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
 
-          {/* Stress Test Results */}
-          <Grid item xs={12}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Stress Test Results
-                </Typography>
-                {stressTestResults.length > 0 ? (
-                  <TableContainer component={Paper}>
-                    <Table>
+              {/* Results Visualization */}
+              {stressTestResults.length > 0 && (
+                <Grid item xs={12}>
+                  <StressTestImpactChart
+                    impactData={stressTestResults.map(result => ({
+                      scenario: result.scenario?.name || 'Test',
+                      equity: result.breakdown?.equity || 0,
+                      rates: result.breakdown?.rates || 0,
+                      fx: result.breakdown?.fx || 0,
+                      total: result.pnl_impact || 0,
+                    }))}
+                  />
+                </Grid>
+              )}
+
+              {/* Detailed Results Table */}
+              <Grid item xs={12}>
+                <Card>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      Detailed Results
+                    </Typography>
+                    {stressTestResults.length > 0 ? (
+                      <TableContainer component={Paper}>
+                        <Table size="small">
                           <TableHead>
                             <TableRow>
-                              <TableCell>Timestamp</TableCell>
+                              <TableCell>Time</TableCell>
                               <TableCell>Scenario</TableCell>
-                              <TableCell>P&L Impact</TableCell>
-                              <TableCell>Equity P&L</TableCell>
-                              <TableCell>Rates P&L</TableCell>
-                              <TableCell>FX P&L</TableCell>
-                              <TableCell>Time Horizon</TableCell>
+                              <TableCell align="right">Total P&L Impact</TableCell>
+                              <TableCell align="right">Equity</TableCell>
+                              <TableCell align="right">Rates</TableCell>
+                              <TableCell align="right">FX</TableCell>
                             </TableRow>
                           </TableHead>
                           <TableBody>
@@ -595,39 +881,40 @@ export default function RiskPage() {
                               <TableRow key={index}>
                                 <TableCell>{result.timestamp.toLocaleString()}</TableCell>
                                 <TableCell>{result.scenario?.name || 'Unknown'}</TableCell>
-                                <TableCell>
+                                <TableCell align="right">
                                   <Typography color={result.pnl_impact < 0 ? 'error.main' : 'success.main'}>
                                     {formatCurrency(result.pnl_impact)}
                                   </Typography>
                                 </TableCell>
-                                <TableCell>
+                                <TableCell align="right">
                                   <Typography color={result.breakdown?.equity < 0 ? 'error.main' : 'success.main'}>
                                     {formatCurrency(result.breakdown?.equity || 0)}
                                   </Typography>
                                 </TableCell>
-                                <TableCell>
+                                <TableCell align="right">
                                   <Typography color={result.breakdown?.rates < 0 ? 'error.main' : 'success.main'}>
                                     {formatCurrency(result.breakdown?.rates || 0)}
                                   </Typography>
                                 </TableCell>
-                                <TableCell>
+                                <TableCell align="right">
                                   <Typography color={result.breakdown?.fx < 0 ? 'error.main' : 'success.main'}>
                                     {formatCurrency(result.breakdown?.fx || 0)}
                                   </Typography>
                                 </TableCell>
-                                <TableCell>{result.scenario?.time_horizon_days || result.time_horizon_days || 1} day(s)</TableCell>
                               </TableRow>
                             ))}
                           </TableBody>
-                    </Table>
-                  </TableContainer>
-                ) : (
-                  <Typography variant="body2" color="textSecondary">
-                    No stress test results yet. Select a scenario and run a test.
-                  </Typography>
-                )}
-              </CardContent>
-            </Card>
+                        </Table>
+                      </TableContainer>
+                    ) : (
+                      <Typography variant="body2" color="textSecondary">
+                        No stress test results yet. Select a scenario and run a test.
+                      </Typography>
+                    )}
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
           </Grid>
         </Grid>
       )}
@@ -733,6 +1020,22 @@ export default function RiskPage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Real-time Alert Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

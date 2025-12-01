@@ -50,6 +50,16 @@ export const optimizePortfolio = async (id, params = {}) => {
   return response;
 };
 
+export const refreshPortfolio = async (id, params = {}) => {
+  const response = await http.post(`/portfolios/${id}/refresh`, {}, { params });
+  return response;
+};
+
+export const refreshAllPortfolios = async (params = {}) => {
+  const response = await http.post('/portfolios/refresh', {}, { params });
+  return response;
+};
+
 // Position management functions
 export const createPosition = async (portfolioId, positionData) => {
   const response = await http.post(`/portfolios/${portfolioId}/positions`, positionData);
@@ -98,6 +108,8 @@ export default {
   getPortfolioPerformance,
   rebalancePortfolio,
   optimizePortfolio,
+  refreshPortfolio,
+  refreshAllPortfolios,
   createPosition,
   getPortfolioPositions,
   getPosition,

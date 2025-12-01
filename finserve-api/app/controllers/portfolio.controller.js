@@ -3,38 +3,11 @@ const Portfolio = db.portfolios;
 const Position = db.positions;
 const Transaction = db.transactions;
 const { Op } = db.Sequelize.Op;
+const PortfolioService = require('../services/portfolio.service');
 
 // Helper function to recalculate portfolio financial metrics
 const recalculatePortfolio = async (portfolioId) => {
-  const portfolio = await Portfolio.findByPk(portfolioId);
-  if (!portfolio) return;
-
-  // Get all active positions
-  const positions = await Position.findAll({
-    where: { portfolio_id: portfolioId, is_archived: false }
-  });
-
-  // Calculate positions value
-  let positionsValue = 0;
-  positions.forEach(position => {
-    positionsValue += parseFloat(position.market_value || 0);
-  });
-
-  // Calculate new totals
-  const totalValue = parseFloat(portfolio.current_balance) + positionsValue;
-  const profitLoss = totalValue - parseFloat(portfolio.initial_balance);
-  const profitLossPercentage = parseFloat(portfolio.initial_balance) > 0 ?
-    (profitLoss / parseFloat(portfolio.initial_balance)) * 100 : 0;
-
-  // Update portfolio
-  await portfolio.update({
-    total_value: totalValue,
-    profit_loss: profitLoss,
-    profit_loss_percentage: profitLossPercentage,
-    last_update_date: new Date()
-  });
-
-  return portfolio;
+  return await PortfolioService.recalculatePortfolioValues(portfolioId);
 };
 
 // Créer un portfolio
@@ -453,5 +426,38 @@ exports.findAll = async (req, res) => {
   } catch (error) {
     console.error('Error finding portfolios:', error);
     res.status(500).json({ message: error.message });
+  }
+};
+
+// Refresh portfolio calculations
+exports.refresh = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { user_id } = req.query;
+
+    if (id) {
+      // Refresh single portfolio
+      await PortfolioService.recalculatePositions(id);
+      const portfolio = await PortfolioService.recalculatePortfolioValues(id);
+      res.json({
+        success: true,
+        message: 'Portfolio refreshed successfully',
+        data: portfolio
+      });
+    } else {
+      // Refresh all portfolios for user
+      const portfolios = await PortfolioService.recalculateAllPortfolios(user_id);
+      res.json({
+        success: true,
+        message: `Refreshed ${portfolios.length} portfolios`,
+        data: portfolios
+      });
+    }
+  } catch (error) {
+    console.error('Error refreshing portfolios:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
   }
 };
