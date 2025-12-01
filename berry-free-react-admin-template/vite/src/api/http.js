@@ -54,7 +54,7 @@ async function request(path, { method = 'GET', headers = {}, body, params, auth 
       // Créer un objet d'erreur détaillé
       const error = new Error(
         typeof errorData === 'object' 
-          ? errorData.message || 'Une erreur est survenue' 
+          ? errorData.error || errorData.message || 'Une erreur est survenue' 
           : 'Erreur de connexion au serveur'
       );
       

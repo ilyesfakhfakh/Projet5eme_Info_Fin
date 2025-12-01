@@ -25,7 +25,9 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Tooltip
+  Tooltip,
+  Tabs,
+  Tab
 } from '@mui/material';
 import {
   Casino as CasinoIcon,
@@ -63,8 +65,12 @@ import {
   jackpotStyle,
   resultChipStyle
 } from './GamingStyles';
+import Match3Game from '../games/Match3Game';
 
 const Gaming = () => {
+  // Tab state
+  const [currentTab, setCurrentTab] = useState(0);
+  
   // Game state
   const [gameId, setGameId] = useState(null);
   const [spinning, setSpinning] = useState(false);
@@ -302,15 +308,41 @@ const Gaming = () => {
             <CasinoIcon sx={{ color: 'white', fontSize: 28 }} />
           </Box>
           <Box>
-            <Typography variant="h2">Gaming - Financial Roulette</Typography>
+            <Typography variant="h2">Gaming Arena</Typography>
             <Typography variant="caption" color="text.secondary">
-              Trade the Market Volatility 🎰
+              Choose Your Game! 🎮
             </Typography>
           </Box>
         </Stack>
       }
     >
-      <Grid container spacing={3}>
+      {/* Game Selector Tabs */}
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+        <Tabs 
+          value={currentTab} 
+          onChange={(e, newValue) => setCurrentTab(newValue)}
+          variant="fullWidth"
+          sx={{
+            '& .MuiTab-root': {
+              fontSize: '1.1rem',
+              fontWeight: 'bold',
+              padding: '16px',
+              '&.Mui-selected': {
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                color: '#fff',
+                borderRadius: '12px 12px 0 0'
+              }
+            }
+          }}
+        >
+          <Tab label="🎰 Financial Roulette" />
+          <Tab label="💎 Match-3 Puzzle" />
+        </Tabs>
+      </Box>
+
+      {/* Roulette Game */}
+      {currentTab === 0 && (
+        <Grid container spacing={3}>
         {/* Alerts */}
         {error && (
           <Grid item xs={12}>
@@ -754,6 +786,12 @@ const Gaming = () => {
           </Card>
         </Grid>
       </Grid>
+      )}
+
+      {/* Match-3 Game */}
+      {currentTab === 1 && (
+        <Match3Game />
+      )}
 
       {/* Animations */}
       <style>

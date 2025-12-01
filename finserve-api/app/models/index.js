@@ -81,6 +81,10 @@ db.roulette_games = require('./roulette/roulette-game.model')(sequelize, Sequeli
 db.roulette_bets = require('./roulette/roulette-bet.model')(sequelize, Sequelize)
 db.jackpots = require('./roulette/jackpot.model')(sequelize, Sequelize)
 
+// Match-3 Game Models
+db.match3_games = require('./match3/match3-game.model')(sequelize, Sequelize)
+db.match3_highscores = require('./match3/match3-highscore.model')(sequelize, Sequelize)
+
 db.users.hasOne(db.user_preferences, {
   foreignKey: { name: 'user_id', allowNull: false, unique: true },
   as: 'preferences',

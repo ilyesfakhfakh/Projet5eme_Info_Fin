@@ -162,6 +162,10 @@ console.log('RSS financial news routes loaded')
 app.use('/api/v1/roulette', rouletteRoutes)
 console.log('Roulette game routes loaded')
 
+// Match-3 game routes
+require('./app/routes/match3.routes.js')(app);
+console.log('Match-3 game routes loaded')
+
 // 404 handler
 app.use((req, res, next) => {
   res.status(404).json({ message: 'Not Found' })
