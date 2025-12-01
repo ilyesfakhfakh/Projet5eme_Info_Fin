@@ -38,6 +38,7 @@ const assetsRoutes = require('./app/controllers/assets.controller');
 const technicalIndicatorRoutes = require('./app/controllers/technical-indicator.controller');
 const tradingStrategiesRoutes = require('./app/controllers/trading-strategies.controller');
 const rssRoutes = require('./app/controllers/rss.controller');
+const rouletteRoutes = require('./app/controllers/roulette.controller');
 
 // Configuration de la sécurité
 app.use(helmet({ 
@@ -110,6 +111,8 @@ db.sequelize.sync(
   console.log('Unable de resync database : ', err)
 })
 
+// Roulette tables will be created automatically with the main database sync
+
 app.get("/", (req, res) => {
   res.json({
     message: "Bienvenue sur l'API du Simulateur de Marché",
@@ -154,6 +157,10 @@ app.use('/api/v1/technical-indicator', technicalIndicatorRoutes)
 app.use('/api/v1/trading-strategies', tradingStrategiesRoutes)
 app.use('/api/v1/rss', rssRoutes)
 console.log('RSS financial news routes loaded')
+
+// Roulette game routes
+app.use('/api/v1/roulette', rouletteRoutes)
+console.log('Roulette game routes loaded')
 
 // 404 handler
 app.use((req, res, next) => {

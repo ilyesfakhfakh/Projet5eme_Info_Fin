@@ -1,5 +1,5 @@
 // assets
-import { IconDashboard, IconChartLine, IconApps, IconAward, IconCertificate, IconNews } from '@tabler/icons-react';
+import { IconDashboard, IconChartLine, IconApps, IconAward, IconCertificate, IconNews, IconDeviceGamepad2 } from '@tabler/icons-react';
 
 // constant
 const icons = {
@@ -8,7 +8,8 @@ const icons = {
   IconApps,
   IconAward,
   IconCertificate,
-  IconNews
+  IconNews,
+  IconDeviceGamepad2
 };
 
 // ==============================|| DASHBOARD MENU ITEMS ||============================== //
@@ -61,6 +62,14 @@ const menuItems = {
       type: 'item',
       url: '/market',
       icon: icons.IconChartLine,
+      breadcrumbs: true
+    },
+    {
+      id: 'gaming',
+      title: 'Gaming',
+      type: 'item',
+      url: '/administration',
+      icon: icons.IconDeviceGamepad2,
       breadcrumbs: true
     },
    

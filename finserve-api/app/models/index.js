@@ -75,6 +75,12 @@ db.system_configurations = require('./admin/system-configuration.model')(sequeli
 db.audit_logs = require('./admin/audit-log.model')(sequelize, Sequelize)
 db.system_alerts = require('./admin/system-alert.model')(sequelize, Sequelize)
 
+// Roulette Game Models
+db.wallets = require('./roulette/wallet.model')(sequelize, Sequelize)
+db.roulette_games = require('./roulette/roulette-game.model')(sequelize, Sequelize)
+db.roulette_bets = require('./roulette/roulette-bet.model')(sequelize, Sequelize)
+db.jackpots = require('./roulette/jackpot.model')(sequelize, Sequelize)
+
 db.users.hasOne(db.user_preferences, {
   foreignKey: { name: 'user_id', allowNull: false, unique: true },
   as: 'preferences',
@@ -393,6 +399,18 @@ db.assets.hasMany(db.prediction_models, {
   as: 'prediction_models',
   onDelete: 'SET NULL',
   onUpdate: 'CASCADE',
+})
+
+// Roulette Game Relationships
+// Note: user_id is stored as string to allow demo users and future flexibility
+db.roulette_games.hasMany(db.roulette_bets, {
+  foreignKey: { name: 'game_id', allowNull: false },
+  as: 'bets',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE',
+})
+db.roulette_bets.belongsTo(db.roulette_games, {
+  foreignKey: { name: 'game_id', allowNull: false },
 })
 
 module.exports = db;

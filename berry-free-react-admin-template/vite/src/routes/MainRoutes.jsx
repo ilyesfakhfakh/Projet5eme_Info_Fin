@@ -15,7 +15,7 @@ const UserProfile = Loadable(lazy(() => import('views/pages/users/UserProfile'))
 // NEW FEATURES
 const ComprehensiveDashboard = Loadable(lazy(() => import('views/dashboard/ComprehensiveDashboard')));
 const TradingHub = Loadable(lazy(() => import('views/pages/TradingHub')));
-const Administration = Loadable(lazy(() => import('views/pages/Administration')));
+const Gaming = Loadable(lazy(() => import('views/pages/Gaming')));
 const FinancialNews = Loadable(lazy(() => import('views/pages/FinancialNews')));
 
 // modules routing
@@ -85,7 +85,7 @@ const MainRoutes = {
     },
     {
       path: 'administration',
-      element: <Administration />
+      element: <Gaming />
     },
     {
       path: 'modules',
