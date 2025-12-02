@@ -71,8 +71,7 @@ const menuItems = {
       url: '/administration',
       icon: icons.IconDeviceGamepad2,
       breadcrumbs: true
-    },
-   
+    }
   ]
 };
 

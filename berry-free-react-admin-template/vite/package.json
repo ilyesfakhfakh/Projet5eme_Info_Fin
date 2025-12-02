@@ -27,6 +27,7 @@
     "react-router-dom": "7.9.3",
     "simplebar-react": "3.3.2",
     "slick-carousel": "1.8.1",
+    "socket.io-client": "^4.8.1",
     "swr": "2.3.6",
     "vite": "7.1.9",
     "vite-jsconfig-paths": "2.0.1",

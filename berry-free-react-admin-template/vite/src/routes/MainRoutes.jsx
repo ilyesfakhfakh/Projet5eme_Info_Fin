@@ -18,6 +18,11 @@ const TradingHub = Loadable(lazy(() => import('views/pages/TradingHub')));
 const Gaming = Loadable(lazy(() => import('views/pages/Gaming')));
 const FinancialNews = Loadable(lazy(() => import('views/pages/FinancialNews')));
 
+// STREAMING FEATURES
+const StreamList = Loadable(lazy(() => import('views/streaming/StreamList')));
+const StreamerDashboard = Loadable(lazy(() => import('views/streaming/StreamerDashboard')));
+const StreamViewer = Loadable(lazy(() => import('views/streaming/StreamViewer')));
+
 // modules routing
 const MarketPage = Loadable(lazy(() => import('views/modules/Market/Index')));
 const PortfolioPage = Loadable(lazy(() => import('views/modules/Portfolio/Index')));
@@ -86,6 +91,24 @@ const MainRoutes = {
     {
       path: 'administration',
       element: <Gaming />
+    },
+    // STREAMING ROUTES
+    {
+      path: 'streaming',
+      children: [
+        {
+          path: '',
+          element: <StreamList />
+        },
+        {
+          path: 'streamer',
+          element: <StreamerDashboard />
+        },
+        {
+          path: 'watch/:streamId',
+          element: <StreamViewer />
+        }
+      ]
     },
     {
       path: 'modules',

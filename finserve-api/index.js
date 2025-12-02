@@ -7,6 +7,7 @@ var compression = require("compression");
 const helmet = require("helmet");
 const bodyParser = require("body-parser");
 const morgan = require("morgan");
+const socketIO = require('socket.io');
 
 const app = express();
 
@@ -39,6 +40,7 @@ const technicalIndicatorRoutes = require('./app/controllers/technical-indicator.
 const tradingStrategiesRoutes = require('./app/controllers/trading-strategies.controller');
 const rssRoutes = require('./app/controllers/rss.controller');
 const rouletteRoutes = require('./app/controllers/roulette.controller');
+const streamingRoutes = require('./app/routes/streaming.routes');
 
 // Configuration de la sécurité
 app.use(helmet({ 
@@ -166,7 +168,42 @@ console.log('Roulette game routes loaded')
 require('./app/routes/match3.routes.js')(app);
 console.log('Match-3 game routes loaded')
 
-// 404 handler
+// Créer serveur HTTP avec Socket.IO (AVANT routes streaming)
+const HTTP_PORT = process.env.PORT || 3200
+const httpServer = app_http.createServer(app);
+
+// Configuration Socket.IO
+const io = socketIO(httpServer, {
+  cors: {
+    origin: function (origin, callback) {
+      if (!origin || 
+          origin.startsWith('http://localhost:') || 
+          origin.startsWith('http://127.0.0.1:') ||
+          origin.startsWith('https://localhost:') || 
+          origin.startsWith('https://127.0.0.1:')) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    methods: ['GET', 'POST'],
+    credentials: true
+  }
+});
+
+// Initialize streaming socket
+const { service: streamingService } = require('./app/sockets/streaming.socket')(io, db);
+console.log('Socket.IO streaming initialized')
+
+// Initialize streaming controller with service
+const streamingController = require('./app/controllers/streaming.controller');
+streamingController.initService(streamingService);
+
+// Streaming routes (AVANT le 404 handler!)
+app.use('/api/v1/streaming', streamingRoutes)
+console.log('Streaming routes loaded')
+
+// 404 handler (DOIT ÊTRE EN DERNIER!)
 app.use((req, res, next) => {
   res.status(404).json({ message: 'Not Found' })
 })
@@ -180,10 +217,9 @@ app.use((err, req, res, next) => {
   res.status(status).json({ message, code })
 })
 
-// Démarrage HTTP (pour le frontend local)
-const HTTP_PORT = process.env.PORT || 3200
-app_http.createServer(app).listen(HTTP_PORT, () => {
-  console.log(`Simulateur de Marché API (HTTP) en cours d'exécution sur le port ${HTTP_PORT}`)
+// Démarrage serveur HTTP
+httpServer.listen(HTTP_PORT, () => {
+  console.log(`Simulateur de Marché API (HTTP) avec Socket.IO sur le port ${HTTP_PORT}`)
 })
 
 // Démarrage HTTPS séparé (pour tests TLS en local)

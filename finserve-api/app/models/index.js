@@ -85,6 +85,12 @@ db.jackpots = require('./roulette/jackpot.model')(sequelize, Sequelize)
 db.match3_games = require('./match3/match3-game.model')(sequelize, Sequelize)
 db.match3_highscores = require('./match3/match3-highscore.model')(sequelize, Sequelize)
 
+// Streaming Models
+db.streams = require('./stream.model')(sequelize, Sequelize)
+db.stream_messages = require('./stream-message.model')(sequelize, Sequelize)
+db.stream_viewers = require('./stream-viewer.model')(sequelize, Sequelize)
+db.stream_tips = require('./stream-tip.model')(sequelize, Sequelize)
+
 db.users.hasOne(db.user_preferences, {
   foreignKey: { name: 'user_id', allowNull: false, unique: true },
   as: 'preferences',
@@ -415,6 +421,37 @@ db.roulette_games.hasMany(db.roulette_bets, {
 })
 db.roulette_bets.belongsTo(db.roulette_games, {
   foreignKey: { name: 'game_id', allowNull: false },
+})
+
+// Streaming Relationships
+db.streams.hasMany(db.stream_messages, {
+  foreignKey: { name: 'stream_id', allowNull: false },
+  as: 'messages',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE',
+})
+db.stream_messages.belongsTo(db.streams, {
+  foreignKey: { name: 'stream_id', allowNull: false },
+})
+
+db.streams.hasMany(db.stream_viewers, {
+  foreignKey: { name: 'stream_id', allowNull: false },
+  as: 'viewers',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE',
+})
+db.stream_viewers.belongsTo(db.streams, {
+  foreignKey: { name: 'stream_id', allowNull: false },
+})
+
+db.streams.hasMany(db.stream_tips, {
+  foreignKey: { name: 'stream_id', allowNull: false },
+  as: 'tips',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE',
+})
+db.stream_tips.belongsTo(db.streams, {
+  foreignKey: { name: 'stream_id', allowNull: false },
 })
 
 module.exports = db;
