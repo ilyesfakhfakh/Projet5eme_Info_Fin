@@ -23,6 +23,12 @@ const StreamList = Loadable(lazy(() => import('views/streaming/StreamList')));
 const StreamerDashboard = Loadable(lazy(() => import('views/streaming/StreamerDashboard')));
 const StreamViewer = Loadable(lazy(() => import('views/streaming/StreamViewer')));
 
+// BOT BUILDER FEATURES
+const BotList = Loadable(lazy(() => import('views/bot-builder/BotList')));
+const BotBuilder = Loadable(lazy(() => import('views/bot-builder/BotBuilder')));
+const Backtest = Loadable(lazy(() => import('views/bot-builder/Backtest')));
+const BotTemplates = Loadable(lazy(() => import('views/bot-builder/BotTemplates')));
+
 // modules routing
 const MarketPage = Loadable(lazy(() => import('views/modules/Market/Index')));
 const PortfolioPage = Loadable(lazy(() => import('views/modules/Portfolio/Index')));
@@ -107,6 +113,28 @@ const MainRoutes = {
         {
           path: 'watch/:streamId',
           element: <StreamViewer />
+        }
+      ]
+    },
+    // BOT BUILDER ROUTES
+    {
+      path: 'bot-builder',
+      children: [
+        {
+          path: '',
+          element: <BotList />
+        },
+        {
+          path: 'templates',
+          element: <BotTemplates />
+        },
+        {
+          path: ':botId',
+          element: <BotBuilder />
+        },
+        {
+          path: ':botId/backtest',
+          element: <Backtest />
         }
       ]
     },

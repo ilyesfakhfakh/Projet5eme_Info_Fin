@@ -1,8 +1,8 @@
 // assets
-import { IconChartLine, IconUserCog, IconLayoutDashboard, IconVideo } from '@tabler/icons-react';
+import { IconChartLine, IconUserCog, IconLayoutDashboard, IconVideo, IconRobot } from '@tabler/icons-react';
 
 // constant
-const icons = { IconChartLine, IconUserCog, IconLayoutDashboard, IconVideo };
+const icons = { IconChartLine, IconUserCog, IconLayoutDashboard, IconVideo, IconRobot };
 
 // ==============================|| NEW FEATURES MENU ITEMS ||============================== //
 
@@ -33,6 +33,14 @@ const features = {
       type: 'item',
       url: '/streaming',
       icon: icons.IconVideo,
+      breadcrumbs: false
+    },
+    {
+      id: 'bot-builder',
+      title: 'Bot Builder',
+      type: 'item',
+      url: '/bot-builder',
+      icon: icons.IconRobot,
       breadcrumbs: false
     },
     {

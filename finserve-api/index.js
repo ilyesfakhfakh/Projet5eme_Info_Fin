@@ -41,6 +41,7 @@ const tradingStrategiesRoutes = require('./app/controllers/trading-strategies.co
 const rssRoutes = require('./app/controllers/rss.controller');
 const rouletteRoutes = require('./app/controllers/roulette.controller');
 const streamingRoutes = require('./app/routes/streaming.routes');
+const botBuilderRoutes = require('./app/routes/bot-builder.routes');
 
 // Configuration de la sécurité
 app.use(helmet({ 
@@ -167,6 +168,10 @@ console.log('Roulette game routes loaded')
 // Match-3 game routes
 require('./app/routes/match3.routes.js')(app);
 console.log('Match-3 game routes loaded')
+
+// Bot Builder routes
+app.use('/api/v1/bots', botBuilderRoutes)
+console.log('Bot Builder routes loaded')
 
 // Créer serveur HTTP avec Socket.IO (AVANT routes streaming)
 const HTTP_PORT = process.env.PORT || 3200

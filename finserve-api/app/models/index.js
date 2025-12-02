@@ -91,6 +91,11 @@ db.stream_messages = require('./stream-message.model')(sequelize, Sequelize)
 db.stream_viewers = require('./stream-viewer.model')(sequelize, Sequelize)
 db.stream_tips = require('./stream-tip.model')(sequelize, Sequelize)
 
+// Bot Builder Models
+db.trading_bots = require('./trading-bot.model')(sequelize, Sequelize)
+db.bot_executions = require('./bot-execution.model')(sequelize, Sequelize)
+db.backtest_results = require('./backtest-result.model')(sequelize, Sequelize)
+
 db.users.hasOne(db.user_preferences, {
   foreignKey: { name: 'user_id', allowNull: false, unique: true },
   as: 'preferences',
@@ -452,6 +457,27 @@ db.streams.hasMany(db.stream_tips, {
 })
 db.stream_tips.belongsTo(db.streams, {
   foreignKey: { name: 'stream_id', allowNull: false },
+})
+
+// Bot Builder Relationships
+db.trading_bots.hasMany(db.bot_executions, {
+  foreignKey: { name: 'bot_id', allowNull: false },
+  as: 'executions',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE',
+})
+db.bot_executions.belongsTo(db.trading_bots, {
+  foreignKey: { name: 'bot_id', allowNull: false },
+})
+
+db.trading_bots.hasMany(db.backtest_results, {
+  foreignKey: { name: 'bot_id', allowNull: false },
+  as: 'backtests',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE',
+})
+db.backtest_results.belongsTo(db.trading_bots, {
+  foreignKey: { name: 'bot_id', allowNull: false },
 })
 
 module.exports = db;
