@@ -20,6 +20,7 @@
     "test:risk": "node test-risk-apis.js",
     "fix:risk-schema": "node fix-risk-schema.js",
     "test:api": "node scripts/test-api-connection.js",
+    "test:realtime": "node scripts/test-realtime.js",
     "start": "node index.js"
   },
   "author": "",
@@ -50,10 +51,14 @@
     "qrcode": "^1.5.4",
     "sequelize": "^6.37.7",
     "sequelize-cli": "^6.6.3",
+    "socket.io": "^4.8.1",
     "speakeasy": "^2.0.0",
     "sqlite3": "^5.1.7",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "socket.io-client": "^4.8.1"
   }
 }

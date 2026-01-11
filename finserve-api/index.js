@@ -148,9 +148,15 @@ app.use((err, req, res, next) => {
 
 // Démarrage HTTP (pour le frontend local)
 const HTTP_PORT = process.env.PORT || 3200
-app_http.createServer(app).listen(HTTP_PORT, () => {
+const httpServer = app_http.createServer(app)
+httpServer.listen(HTTP_PORT, () => {
   console.log(`Simulateur de Marché API (HTTP) en cours d'exécution sur le port ${HTTP_PORT}`)
 })
+
+// Initialiser Socket.IO sur le serveur HTTP
+const socketManager = require('./app/socket/socket-manager')
+socketManager.initializeSocket(httpServer)
+console.log('Socket.IO initialisé et prêt pour les connexions temps réel')
 
 // Démarrage HTTPS séparé (pour tests TLS en local)
 const HTTPS_PORT = process.env.HTTPS_PORT || 3443
@@ -162,4 +168,3 @@ const httpsServer = app_https.createServer({
 httpsServer.listen(HTTPS_PORT, () => {
   console.log(`Simulateur de Marché API (HTTPS) en cours d'exécution sur le port ${HTTPS_PORT}`)
 })
-

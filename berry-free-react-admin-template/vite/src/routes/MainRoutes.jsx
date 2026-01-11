@@ -13,8 +13,10 @@ const UsersList = Loadable(lazy(() => import('views/pages/users/UsersList')));
 const UserProfile = Loadable(lazy(() => import('views/pages/users/UserProfile')));
 // modules routing
 const MarketPage = Loadable(lazy(() => import('views/modules/Market/Index')));
+const RealTimeMarketPage = Loadable(lazy(() => import('views/modules/Market/RealTimeMarket')));
 const PortfolioPage = Loadable(lazy(() => import('views/modules/Portfolio/Index')));
 const NewsPage = Loadable(lazy(() => import('views/modules/News/Index')));
+const RealTimeNewsPage = Loadable(lazy(() => import('views/modules/News/RealTimeNews')));
 const RiskPage = Loadable(lazy(() => import('views/modules/Risk/Index')));
 const SimulationPage = Loadable(lazy(() => import('views/modules/Simulation/Index')));
 const TradingPage = Loadable(lazy(() => import('views/modules/Trading/Index')));
@@ -26,8 +28,6 @@ const IndicatorsPage = Loadable(lazy(() => import('views/modules/Indicators/Inde
 const AuditLogsPage = Loadable(lazy(() => import('views/modules/Admin/AuditLogs')));
 const SystemAlertsPage = Loadable(lazy(() => import('views/modules/Admin/SystemAlerts')));
 const SystemConfigPage = Loadable(lazy(() => import('views/modules/Admin/SystemConfig')));
-
-// (demo utilities & sample routes removed)
 
 // ==============================|| MAIN ROUTING ||============================== //
 
@@ -67,8 +67,10 @@ const MainRoutes = {
       path: 'modules',
       children: [
         { path: 'market', element: <MarketPage /> },
+        { path: 'market/realtime', element: <RealTimeMarketPage /> },
         { path: 'portfolio', element: <PortfolioPage /> },
         { path: 'news', element: <NewsPage /> },
+        { path: 'news/realtime', element: <RealTimeNewsPage /> },
         { path: 'risk', element: <RiskPage /> },
         { path: 'simulation', element: <SimulationPage /> },
         { path: 'trading', element: <TradingPage /> },

@@ -11,8 +11,10 @@ const modules = {
   type: 'group',
   children: [
     { id: 'mod-market', title: 'Market', type: 'item', url: '/modules/market', icon: icons.IconChartHistogram },
+    { id: 'mod-market-realtime', title: 'Market (Realtime)', type: 'item', url: '/modules/market/realtime', icon: icons.IconChartHistogram },
     { id: 'mod-portfolio', title: 'Portfolio', type: 'item', url: '/modules/portfolio', icon: icons.IconBriefcase },
     { id: 'mod-news', title: 'News', type: 'item', url: '/modules/news', icon: icons.IconNews },
+    { id: 'mod-news-realtime', title: 'News (Realtime)', type: 'item', url: '/modules/news/realtime', icon: icons.IconNews },
     { id: 'mod-risk', title: 'Risk', type: 'item', url: '/modules/risk', icon: icons.IconShield },
     { id: 'mod-simulation', title: 'Simulation', type: 'item', url: '/modules/simulation', icon: icons.IconPlaystationX },
     { id: 'mod-trading', title: 'Trading', type: 'item', url: '/modules/trading', icon: icons.IconArrowsShuffle },
